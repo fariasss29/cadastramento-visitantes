@@ -1,0 +1,184 @@
+import {
+    Alert,
+    Box,
+    Button,
+    duration,
+    FormControl,
+    FormControlLabel,
+    FormLabel,
+    MenuItem,
+    Paper,
+    Radio,
+    RadioGroup,
+    TextField,
+    Typography
+  } from '@mui/material'
+  import { useForm, Controller } from 'react-hook-form'
+  import axios from '@/services/axios'
+  import toast from 'react-hot-toast'
+  import { useNavigate } from 'react-router-dom'
+import { RiArchiveStackLine } from 'react-icons/ri'
+  
+  const visitantes = [
+    { id: 1, nome: 'Caça rato' },
+    { id: 2, nome: 'se leu é gay' },
+    { id: 3, nome: 'yuri alberto' }
+  ]
+  
+  const solicitantes = visitantes
+  
+  const motivos = ['Reunião', 'Visita Técnica']
+  
+  const opcoes = ['Notebook', 'EPI', 'Fotos', 'Fábrica', 'Estacionamento']
+  
+  export default function CadastroVisita() {
+    const navigate = useNavigate()
+    const {
+      register,
+      handleSubmit,
+      control,
+      formState: { errors }
+    } = useForm()
+  
+    const onSubmit = async (dados) => {
+      try {
+        toast.loading('Salvando...', { id: 'salvando' })
+        const response = await axios.post('/visitantes/visita/criar', dados)
+        toast.success(response.data.message, { id: 'salvando' })
+        navigate('/visitantes/inicial')
+      } catch (err) {
+        const mensagemErro = err.response?.data?.message || 'Erro ao salvar'
+        toast.error(mensagemErro, { id: 'salvando' })
+      }
+    }
+  
+    const ErrorAlert = ({ campo }) =>
+      campo ? (
+        <Alert variant='outlined' severity='error' sx={{ mt: 1 }}>
+          {campo.message || 'Campo obrigatório'}
+        </Alert>
+      ) : null
+  
+    return (
+      <Box sx={{ width: '100%', px: 3, mt: 3 }}>
+        <Typography variant='h3' mb={2}>
+          Cadastro de Visita
+        </Typography>
+  
+        <Paper sx={{ p: 4, borderRadius: 5 }}>
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+  
+              <Box>
+                <TextField
+                  select
+                  label='Nome do Visitante'
+                  fullWidth
+                  defaultValue=''
+                  {...register('visitante_id', { required: true })}
+                >
+                  {visitantes.map((v) => (
+                    <MenuItem key={v.id} value={v.id}>
+                      {v.nome}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <ErrorAlert campo={errors.visitante_id} />
+              </Box>
+  
+              <Box>
+                <TextField
+                  select
+                  label='Motivo da Visita'
+                  fullWidth
+                  defaultValue=''
+                  {...register('motivo', { required: true })}
+                >
+                  {motivos.map((motivo, index) => (
+                    <MenuItem key={index} value={motivo}>
+                      {motivo}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <ErrorAlert campo={errors.motivo} />
+              </Box>
+  
+              <Box>
+                <TextField
+                  select
+                  label='Solicitante'
+                  fullWidth
+                  defaultValue=''
+                  {...register('solicitante_id', { required: true })}
+                >
+                  {solicitantes.map((s) => (
+                    <MenuItem key={s.id} value={s.id}>
+                      {s.nome}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <ErrorAlert campo={errors.solicitante_id} />
+              </Box>
+  
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                {opcoes.map((item) => (
+                  <FormControl
+                    key={item}
+                    component='fieldset'
+                    sx={{ width: 'calc(50% - 8px)' }}
+                  >
+                    <FormLabel component='legend' sx={{ fontWeight: 'bold', mb: 1 }}>
+                      {item}
+                    </FormLabel>
+                    <Controller
+                      name={item}
+                      control={control}
+                      defaultValue='não'
+                      render={({ field }) => (
+                        <RadioGroup row {...field}>
+                          {['sim', 'não'].map((valor) => (
+                            <FormControlLabel
+                              key={valor}
+                              value={valor}
+                              control={<Radio />}
+                              label={valor.charAt(0).toUpperCase() + valor.slice(1)}
+                              sx={{
+                                m: 1,
+                                px: 2,
+                                py: 1,
+                                border: '1px solid #ccc',
+                                borderRadius: '10px',
+                                width: '220px',
+                                height: '70px',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                textAlign: 'center',
+                                '& .MuiRadio-root': {
+                                  p: 0,
+                                  mr: 1,
+                                  color: valor === 'sim' ? '#2e7d32' : '#d32f2f'
+                                },
+                                '& .MuiFormControlLabel-label': {
+                                  fontSize: '1.2rem',
+                                  fontWeight: '500'
+                                }
+                              }}
+                            />
+                          ))}
+                        </RadioGroup>
+                      )}
+                    />
+                  </FormControl>
+                ))}
+              </Box>
+  
+              <Button type='submit' variant='contained' fullWidth sx={{ mt : 2, py : 2, fontSize: '1.1rem' }}>
+              Registrar Empresa
+            </Button>
+          </Box>
+        </form>
+      </Paper>
+    </Box>
+  )
+}
+  
