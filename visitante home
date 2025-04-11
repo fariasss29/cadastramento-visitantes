@@ -1,0 +1,47 @@
+import { Box, Typography } from '@mui/material'
+import CardCompetencias from '@/components/matriz-competencia/Gerenciamento/CardCompetencias'
+import {
+  MdDomain,
+  MdFolderCopy,
+  MdOutlineDirectionsWalk,
+  MdOutlineFindInPage,
+  MdOutlineGroups
+} from 'react-icons/md'
+
+export default function VisitanteHome() {
+  const pages = [
+    { chave: 1, titulo: 'Cadastro de empresa', icon: <MdDomain size={120} />, descricao: 'Cadastre os dados da empresa visitante', link: '/visitantes/cadastro-empresa' },
+    { chave: 2, titulo: 'Cadastro de pessoa', icon: <MdOutlineGroups size={120} />, descricao: 'Cadastre os dados do visitante indivíduo', link: '/visitantes/cadastro-pessoa' },
+    { chave: 3, titulo: 'Cadastro de visitas', icon: <MdOutlineDirectionsWalk size={120} />, descricao: 'Cadastre as características da visita', link: '/visitantes/Cadastro-visita' },
+    { chave: 4, titulo: 'Meus registro', icon: <MdFolderCopy size={120} />, descricao: 'Procure registro de visitas', link: '/competencias/consultar/matriz' },
+    { chave: 5, titulo: 'Aprovador', icon: <MdOutlineFindInPage size={120} />, descricao: 'Procure registro de visitas', link: '/competencias/consultar/matriz' }
+  ]
+
+  return (
+    <Box>
+      <Typography variant="h4" sx={{ mb: 2 }}>
+        Agendamento de visitantes
+      </Typography>
+
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: 2,
+          justifyContent: { xs: 'center', md: 'normal' }
+        }}
+      >
+        {pages.map((e) => (
+          <CardCompetencias
+            key={e.chave}
+            link={e.link}
+            titulo={e.titulo}
+            icon={e.icon}
+            descricao={e.descricao}
+          />
+        ))}
+      </Box>
+    </Box>
+  )
+}
