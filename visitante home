@@ -10,31 +10,31 @@ import {
 
 export default function VisitanteHome() {
   const pages = [
-    { chave: 1, titulo: 'Cadastro de empresa', icon: <MdDomain size={120} />, descricao: 'Cadastre os dados da empresa visitante', link: '/visitantes/cadastro-empresa' },
-    { chave: 2, titulo: 'Cadastro de pessoa', icon: <MdOutlineGroups size={120} />, descricao: 'Cadastre os dados do visitante indivíduo', link: '/visitantes/cadastro-pessoa' },
+    { chave: 1, titulo: 'Cadastro de empresa', icon: <MdDomain size={120} />, descricao: 'Cadastre os dados da empresa visitante', link: '/visitantes/Cadastro-empresa' },
+    { chave: 2, titulo: 'Cadastro de pessoa', icon: <MdOutlineGroups size={120} />, descricao: 'Cadastre os dados do visitante indivíduo', link: '/visitantes/Cadastro-pessoa' },
     { chave: 3, titulo: 'Cadastro de visitas', icon: <MdOutlineDirectionsWalk size={120} />, descricao: 'Cadastre as características da visita', link: '/visitantes/Cadastro-visita' },
-    { chave: 4, titulo: 'Meus registro', icon: <MdFolderCopy size={120} />, descricao: 'Procure registro de visitas', link: '/competencias/consultar/matriz' },
-    { chave: 5, titulo: 'Aprovador', icon: <MdOutlineFindInPage size={120} />, descricao: 'Procure registro de visitas', link: '/competencias/consultar/matriz' }
+    { chave: 4, titulo: 'Meus registro', icon: <MdFolderCopy size={120} />, descricao: 'Procure registro de visitas', link: '/visitantes/Meus-registros' },
+    { chave: 5, titulo: 'Aprovador', icon: <MdOutlineFindInPage size={120} />, descricao: 'Procure aprovadores de visitas', link: '/visitantes/aprovador' }
   ]
 
   return (
     <Box>
-      <Typography variant="h4" sx={{ mb: 2 }}>
+      <Typography variant="h3" sx={{ mb: 3 }}>
         Agendamento de visitantes
       </Typography>
 
       <Box
         sx={{
-          display: 'flex',
-          flexWrap: 'wrap',
+          display: 'flex',  //usado para alinhar-los na mesma linha
+          flexWrap: 'wrap', //quebra de linha qnd necessário
           alignItems: 'center',
           gap: 2,
-          justifyContent: { xs: 'center', md: 'normal' }
+          justifyContent: { xs: 'center', md: 'normal' } //centraliza
         }}
       >
         {pages.map((e) => (
-          <CardCompetencias
-            key={e.chave}
+          <CardCompetencias //para cade item do array pages ele renderiza um cardcompetencias de dados dado pelo props
+            key={e.chave} //usado para rastrear
             link={e.link}
             titulo={e.titulo}
             icon={e.icon}
