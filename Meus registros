@@ -1,0 +1,90 @@
+//fazer com datagrid 
+
+import { Box } from '@mui/material';
+import React from 'react';
+import { Table, TableHead, TableBody, TableRow, TableCell } from '@mui/material';
+import {
+    MdCancel,
+    MdCheck, 
+} from 'react-icons/md'
+
+
+
+
+
+
+function Tabela() {
+  return (
+    
+    <Box>
+        
+        <Table>
+            <TableHead>
+                <TableRow > {/*representa uma linha da tabela e também faz parte do conjunto de componentes do Material UI MUI. Ele agrupa várias TableCell em uma linha única*/}
+                <TableCell sx={{ backgroundColor: 'brown' ,border: '3.5px solid black', textAlign: 'center', fontSize: '17px'}}>Visitante</TableCell> {/*usado para apresentar celulas dentro da tabela*/}
+                <TableCell sx={{ backgroundColor: 'brown' ,border: '3.5px solid black', textAlign: 'center', fontSize: '20px' }}><strong>Empresa</strong></TableCell>
+                <TableCell sx={{ backgroundColor: 'brown' ,border: '3.5px solid black', textAlign: 'center', fontSize: '20px' }}><strong>Motivo</strong></TableCell>
+                <TableCell sx={{ backgroundColor: 'brown' ,border: '3.5px solid black', textAlign: 'center', fontSize: '20px' }}><strong>Notebook</strong></TableCell>
+                <TableCell sx={{ backgroundColor: 'brown' ,border: '3.5px solid black', textAlign: 'center', fontSize: '20px' }}><strong>EPI</strong></TableCell>
+                <TableCell sx={{ backgroundColor: 'brown' ,border: '3.5px solid black', textAlign: 'center', fontSize: '20px' }}><strong>Fotos</strong></TableCell>
+                <TableCell sx={{ backgroundColor: 'brown' ,border: '3.5px solid black', textAlign: 'center', fontSize: '20px' }}><strong>Visitado</strong></TableCell>
+                <TableCell sx={{ backgroundColor: 'brown' ,border: '3.5px solid black', textAlign: 'center', fontSize: '20px' }}><strong>Ramal</strong></TableCell>
+                <TableCell sx={{ backgroundColor: 'brown' ,border: '3.5px solid black', textAlign: 'center', fontSize: '20px' }}><strong>Última Visita</strong></TableCell>
+                <TableCell sx={{ backgroundColor: 'brown' ,border: '3.5px solid black', textAlign: 'center', fontSize: '20px' }}><strong>Status</strong></TableCell>
+                </TableRow>
+            </TableHead>
+            <TableBody>
+                <TableRow>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>João Silva</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>EmpresaX</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>reunião/visita técnica</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>s/n</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>s/n</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>s/n</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>jorgin da silva</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>999</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>14/04/2025 10:59</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>
+                    <MdCancel size={20}/>
+                    <MdCheck size={20}/>
+                </TableCell>
+                </TableRow>
+                <TableRow>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>João Silva</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>EmpresaX</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>reunião/visita técnica</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>s/n</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>s/n</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>s/n</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>jorgin da silva</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>999</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>14/04/2025 10:59</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>
+                    <MdCancel size={20}/>
+                    <MdCheck size={20}/>
+                </TableCell>
+                </TableRow>
+                <TableRow>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>João Silva</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>EmpresaX</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>reunião/visita técnica</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>s/n</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>s/n</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>s/n</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>jorgin da silva</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>999</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>14/04/2025 10:59</TableCell>
+                <TableCell sx={{ backgroundColor: 'white' ,border: '2px solid black', textAlign: 'center', fontSize: '14px' }}>
+                    <MdCancel size={20}/>
+                    <MdCheck size={20}/>
+                </TableCell>
+                </TableRow>
+            </TableBody>
+        </Table>
+    </Box>
+    
+
+  );
+}
+
+export default Tabela
