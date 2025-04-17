@@ -7,19 +7,23 @@ import {
   Typography
 } from '@mui/material'
 import { Controller, useForm } from 'react-hook-form'
+import { useState } from 'react';
 import InputMask from 'react-input-mask'
 import axios from '@/services/axios'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
+import ModalCadastroEmpresa from '@/components/visitantes/ModalCadastroEmpresa'
+import { getValue } from '@mdxeditor/editor';
+
 
 // Validação CNPJ
 function validarCNPJ(cnpj) {
-  cnpj = cnpj.replace(/[^\d]+/g, '')
-  if (cnpj.length !== 14 || /^(\d)\1+$/.test(cnpj)) return false
+  cnpj = cnpj.replace(/[^\d]+/g, '') // trecho usado para limpar a str e manter somente numeros
+  if (cnpj.length !== 14 || /^(\d)\1+$/.test(cnpj)) return false // verifica se o cpnj tem 14 digitos e se eles nao tem todos os mesmos numeros ex 9999999999
 
-  let soma = 0
-  let pos = 5
-  for (let i = 0; i < 12; i++) {
+  let soma = 0 //inicia a soma com 0
+  let pos = 5  //e o mutiplicador com 5
+  for (let i = 0; i < 12; i++) { //entender esse calculo dps
     soma += +cnpj[i] * pos--
     if (pos < 2) pos = 9
   }
@@ -39,14 +43,14 @@ function validarCNPJ(cnpj) {
 }
 
 function isValidCEP(cep) {
-  cep = cep.replace(/[^\d]+/g, '')
-  return cep.length === 8
+  cep = cep.replace(/[^\d]+/g, '') // mantem so numeros no cep
+  return cep.length === 8   // tem q ter 8 caracteres e essa length ou len é usada para determinar o tamanho da lista nesse casso do cep
 }
 
-async function buscarEmpresaPorCNPJ(cnpj) {
+async function buscarEmpresaPorCNPJ(cnpj) {  //async usado para fazer funções assincronas
   const cnpjLimpo = cnpj.replace(/[^\d]+/g, '')
   try {
-    const response = await axios.get(`https://brasilapi.com.br/api/cnpj/v1/${cnpjLimpo}`)
+    const response = await axios.get(`https://brasilapi.com.br/api/cnpj/v1/${cnpjLimpo}`) //await funções assincronas tbm, aixos é para ler o link https, e o get solicita dados de um servidor no caso o link
     const {
       razao_social,
       nome_fantasia,
@@ -78,13 +82,50 @@ async function buscarEmpresaPorCNPJ(cnpj) {
 
 export default function CadastroEmpresa() {
   const navigate = useNavigate()
+
+  const [open, setOpenConfirmModal] = useState(false)
+  const [id, setId] = useState('')
+  
+  const openModalCadastroEmpresa = () => {
+    setOpenConfirmModal(true)
+  }
+
+  const handleCloseCadastroEmpresa = () => {
+    setOpenConfirmModal(false)
+  }
+
+  const handleModal = (novoId) => {
+    setId(novoId)
+    setOpenConfirmModal(true)
+  }
+ 
+
+
+  const handleConfirm = async () => {
+    const dados = getValues(); // pega os dados atuais do formulário
+    try {
+      toast.loading('Salvando...', { id: 'salvando' });
+      const response = await axios.post('/visitantes/visita/criar', dados);
+      toast.success(response.data.message, { id: 'salvando' });
+      navigate('/visitantes/inicial');
+    } catch (err) {
+      const mensagemErro = err.response?.data?.message || 'Erro ao salvar';
+      toast.error(mensagemErro, { id: 'salvando' });
+    } finally {
+      setOpenConfirmModal(false); // fecha o modal depois do envio
+    }
+  };
+
+
   const {
     register,
     handleSubmit,
     setValue,
     watch,
     control,
-    formState: { errors }
+    formState: { errors },
+    getValue,
+    trigger
   } = useForm()
 
   const onSubmit = (dados) => {
@@ -118,6 +159,13 @@ export default function CadastroEmpresa() {
       setValue('estado', dados.estado)
     } catch (err) {
       toast.error(err.message)
+    }
+  }
+
+  const handleOpenModalIfValid = async () => {
+    const valid = await trigger(); // dispara a validação dos campos
+    if (valid) {
+      setOpenConfirmModal(true); // só abre o modal se estiver válido
     }
   }
 
@@ -273,12 +321,18 @@ export default function CadastroEmpresa() {
               </Box>
             </Box>
 
-            <Button type='submit' variant='contained' fullWidth sx={{ py: 2, fontSize: '1.1rem' }}>
+            <Button type='button' variant='contained' onClick={handleOpenModalIfValid} fullWidth sx={{ py: 2, fontSize: '1.1rem' }}>
               Registrar Empresa
             </Button>
           </Box>
         </form>
       </Paper>
+      <ModalCadastroEmpresa
+        open={open}
+        handleClose={handleCloseCadastroEmpresa}
+        confirm={handleConfirm}
+        id={id}
+      />
     </Box>
   )
 }
