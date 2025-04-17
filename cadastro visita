@@ -2,7 +2,6 @@ import {
     Alert,
     Box,
     Button,
-    duration,
     FormControl,
     FormControlLabel,
     FormLabel,
@@ -15,14 +14,25 @@ import {
   } from '@mui/material'
   import { useForm, Controller } from 'react-hook-form'
   import axios from '@/services/axios'
+  import { useState } from 'react';
   import toast from 'react-hot-toast'
   import { useNavigate } from 'react-router-dom'
-import { RiArchiveStackLine } from 'react-icons/ri'
+  import ModalCadastroVisita from '@/components/visitantes/ModalCadastroVisita'
+
+
+
   
   const visitantes = [
-    { id: 1, nome: 'Caça rato' },
-    { id: 2, nome: 'se leu é gay' },
-    { id: 3, nome: 'yuri alberto' }
+    { id: 1, nome: 'sla' },
+    { id: 2, nome: 'sla' },
+    { id: 3, nome: 'sla' }
+
+  ]
+
+  const empresa = [
+    {id : 1, nome: 'empresaX'},
+    {id : 2, nome: 'empresaY'},
+    {id : 3, nome: 'empresaZ'},
   ]
   
   const solicitantes = visitantes
@@ -30,14 +40,56 @@ import { RiArchiveStackLine } from 'react-icons/ri'
   const motivos = ['Reunião', 'Visita Técnica']
   
   const opcoes = ['Notebook', 'EPI', 'Fotos', 'Fábrica', 'Estacionamento']
+
   
   export default function CadastroVisita() {
     const navigate = useNavigate()
+
+    const [open, setOpenConfirmModal] = useState(false)
+    const [id, setId] = useState('')
+
+    const handleOpenModalIfValid = async () => {
+      const valid = await trigger(); // dispara a validação dos campos
+      if (valid) {
+        setOpenConfirmModal(true); // só abre o modal se estiver válido
+      }
+    }
+
+    const openModalCadastroVisita = () => {
+      setOpenConfirmModal(true)
+    }
+    
+    const handleCloseCadastroVisita = () => {
+      setOpenConfirmModal(false)
+    }
+
+    const handleModal = (NovoId) => {
+      setId(NovoId)
+      setOpenConfirmModal(true)
+    }
+
+    const handleConfirm = async () => {
+      const dados = getValues(); // pega os dados atuais do formulário
+      try {
+        toast.loading('Salvando...', { id: 'salvando' });
+        const response = await axios.post('/visitantes/visita/criar', dados);
+        toast.success(response.data.message, { id: 'salvando' });
+        navigate('/visitantes/inicial');
+      } catch (err) {
+        const mensagemErro = err.response?.data?.message || 'Erro ao salvar';
+        toast.error(mensagemErro, { id: 'salvando' });
+      } finally {
+        setOpenConfirmModal(false); // fecha o modal depois do envio
+      }
+    };
+
     const {
       register,
       handleSubmit,
       control,
-      formState: { errors }
+      formState: { errors },
+      getValues,
+      trigger
     } = useForm()
   
     const onSubmit = async (dados) => {
@@ -73,9 +125,9 @@ import { RiArchiveStackLine } from 'react-icons/ri'
                 <TextField
                   select
                   label='Nome do Visitante'
-                  fullWidth
-                  defaultValue=''
-                  {...register('visitante_id', { required: true })}
+                  fullWidth //ocupe toda a largura disponível do seu container pai.
+                  defaultValue='' //retornando o valores
+                  {...register('visitante_id', { required: true })} //registrando
                 >
                   {visitantes.map((v) => (
                     <MenuItem key={v.id} value={v.id}>
@@ -85,6 +137,24 @@ import { RiArchiveStackLine } from 'react-icons/ri'
                 </TextField>
                 <ErrorAlert campo={errors.visitante_id} />
               </Box>
+
+              <Box>
+                <TextField
+                select
+                label='Empresa'
+                fullWidth
+                defaultValue=''
+                {...register('empresa_id', {required: true})}
+                >
+                 {empresa.map((z) => (   
+                    <MenuItem key={z.id} value={z.id}>
+                      {z.nome}
+                    </MenuItem>
+                 ))}
+                </TextField>
+                <ErrorAlert campo={errors.visitante_id} />
+              </Box>
+
   
               <Box>
                 <TextField
@@ -120,14 +190,14 @@ import { RiArchiveStackLine } from 'react-icons/ri'
                 <ErrorAlert campo={errors.solicitante_id} />
               </Box>
   
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+              <Box sx={{display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between' }}>
                 {opcoes.map((item) => (
                   <FormControl
                     key={item}
                     component='fieldset'
-                    sx={{ width: 'calc(50% - 8px)' }}
+                    sx={{ display: 'flex', justifyContent: 'space-between', border: '1px solid #CCC', borderRadius: 2, p: 1 }}
                   >
-                    <FormLabel component='legend' sx={{ fontWeight: 'bold', mb: 1 }}>
+                    <FormLabel component='legend' sx={{ fontWeight: 'bold', px: 1 }}>
                       {item}
                     </FormLabel>
                     <Controller
@@ -148,8 +218,8 @@ import { RiArchiveStackLine } from 'react-icons/ri'
                                 py: 1,
                                 border: '1px solid #ccc',
                                 borderRadius: '10px',
-                                width: '220px',
-                                height: '70px',
+                                width: '80px',
+                                height: '50px',
                                 justifyContent: 'center',
                                 alignItems: 'center',
                                 textAlign: 'center',
@@ -172,12 +242,19 @@ import { RiArchiveStackLine } from 'react-icons/ri'
                 ))}
               </Box>
   
-              <Button type='submit' variant='contained' fullWidth sx={{ mt : 2, py : 2, fontSize: '1.1rem' }}>
+              <Button type='button' variant='contained' onClick={handleOpenModalIfValid}  fullWidth sx={{ mt : 2, py : 2, fontSize: '1.1rem' }}>
               Registrar Empresa
-            </Button>
+            </Button> 
           </Box>
         </form>
       </Paper>
+
+      <ModalCadastroVisita 
+      open={open} 
+      handleClose={handleCloseCadastroVisita} 
+      id={id} 
+      Confirm={handleConfirm}
+      />
     </Box>
   )
 }
