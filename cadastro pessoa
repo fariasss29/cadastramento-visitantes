@@ -8,14 +8,15 @@ import {
   } from '@mui/material'
   import { useForm, Controller } from 'react-hook-form'
   import InputMask from 'react-input-mask'
+  import { useState } from 'react';
   import axios from '@/services/axios'
   import toast from 'react-hot-toast'
   import { useNavigate } from 'react-router-dom'
   import MenuItem from '@mui/material/MenuItem'
   import { Autocomplete, InputLabel } from '@mui/material'
-  import { useQuery } from 'react-query'
-  import Error from '@/components/Error'
-  import BackdropLoading from '@/components/BackdropLoading'
+  import ModalCadastroPessoa from '@/components/visitantes/ModalCadastroPessoa.jsx';
+  import { getValue } from '@mdxeditor/editor';
+
   
   // Função de validação de CPF
   function validarCPF(cpf) {
@@ -39,12 +40,53 @@ import {
 
 export default function CadastroPessoa() {
     const navigate = useNavigate()
+
+    const [open, setOpenConfirmModal] = useState(false)
+    const [id, setId] = useState('')
+
+
+    const handleOpenModalIfValid = async () => {
+      const valid = await trigger(); // dispara a validação dos campos
+      if (valid) {
+        setOpenConfirmModal(true); // só abre o modal se estiver válido
+      }
+    }
+
+    const openModalCadastroPessoa = () => {
+      setOpenConfirmModal(true)
+    }
+
+    const handleCloseCadastroPessoa = () => {
+      setOpenConfirmModal(false)
+    }
+    const handleModal = (NovoId) => {
+      setId(NovoId)
+      setOpenConfirmModal(true)
+    }
+
+    const handleConfirm = async () => {
+      const dados = getValues(); // pega os dados atuais do formulário
+      try {
+        toast.loading('Salvando...', { id: 'salvando' });
+        const response = await axios.post('/visitantes/visita/criar', dados);
+        toast.success(response.data.message, { id: 'salvando' });
+        navigate('/visitantes/inicial');
+      } catch (err) {
+        const mensagemErro = err.response?.data?.message || 'Erro ao salvar';
+        toast.error(mensagemErro, { id: 'salvando' });
+      } finally {
+        setOpenConfirmModal(false); // fecha o modal depois do envio
+      }
+    };
+
   
     const {
       register,
       handleSubmit,
       control,
-      formState: { errors }
+      formState: { errors },
+      getValues,
+      trigger
     } = useForm()
   
     const onSubmit = async (dados) => {
@@ -229,12 +271,20 @@ export default function CadastroPessoa() {
                 </Box>
               </Box>
   
-              <Button type='submit' variant='contained' fullWidth sx={{ py: 2, fontSize: '1.1rem' }}>
+              <Button type='button' variant='contained' onClick={handleOpenModalIfValid}  fullWidth sx={{ py: 2, fontSize: '1.1rem' }}>
                 Registrar Pessoa
               </Button>
             </Box>
           </form>
         </Paper>
+        <ModalCadastroPessoa
+        open = {open}
+        handleClose={handleCloseCadastroPessoa}
+        confirm={handleConfirm}
+        id={id}
+   
+        />
+
       </Box>
     )
   }
