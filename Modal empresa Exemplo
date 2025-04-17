@@ -1,0 +1,75 @@
+import { forwardRef, useEffect, useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { useQuery } from "react-query";
+import {
+    Button,
+    Dialog,
+    DialogContent,
+    DialogActions,
+    Typography,
+    TextField,
+    Autocomplete,
+    Slide,
+    Box,
+    Alert,
+    Divider,
+    Tooltip,
+} from "@mui/material";
+
+
+
+const Transition = forwardRef(function Transition(props, ref) {
+    return <Slide direction="up" ref={ref} {...props} />;
+});
+
+export default function ModalCadastroEmpresa({open, handleClose, confirm}) {
+
+    return (
+        <Dialog
+            open={open}
+            TransitionComponent={Transition}
+            keepMounted
+            onClose={handleClose}
+            PaperProps={{
+                style: {
+                    width: "50%",
+                    minWidth: 350,
+                    height: 'auto',
+                    textAlign: "center",
+                },
+            }}
+        >
+
+            <DialogContent sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
+                <Typography variant="h5" sx={{ fontWeight: "bold", textTransform: "uppercase" }}>
+                    ATENÇÃO!
+                </Typography>
+
+                <Divider flexItem/>
+                <Typography sx={{ textTransform: "uppercase", fontSize: 22, fontWeight: 'bold'}}>
+                DESEJA CONFIRMAR O CADASTRO DA EMPRESA? 
+                </Typography>
+                <Divider flexItem/>
+                
+
+                <DialogActions>
+                <Button 
+                        onClick={confirm}
+                        variant="contained"
+                        sx={{ fontSize: 16, width: "100%" }}
+                    >
+                        Confirmar
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="error"
+                        onClick={handleClose}
+                        sx={{ fontSize: 16, width: "100%" }}
+                    >
+                        Fechar
+                    </Button>
+                </DialogActions>
+            </DialogContent>
+        </Dialog>
+    )
+}
