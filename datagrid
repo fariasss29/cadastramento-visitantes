@@ -1,0 +1,134 @@
+import * as React from 'react';
+import Box from '@mui/material/Box';
+import { DataGrid } from '@mui/x-data-grid';
+import { Paper } from '@mui/material';
+
+const columns = [
+  { field: 'id', headerName: 'ID', width: 50, align: 'center' },
+  {
+    field: 'visitante',
+    headerName: 'Visitante',
+    width: 140,
+    editable: true,
+    align: 'center',
+  },
+  {
+    field: 'empresa',
+    headerName: 'Empresa',
+    width: 140,
+    editable: true,
+    align: 'center',
+  },
+  {
+    field: 'motivo',
+    headerName: 'Motivo',
+    width: 100,
+    editable: true,
+    align: 'center',
+  },
+  {
+    field: 'visitado',
+    headerName:'Visitado',
+    width: 140,
+    editable: true,
+    align: 'center',
+  },
+  {
+    field: 'ultima_visita',
+    headerName: 'Última Visita',
+    width: 150,
+    editable: true,
+    align: 'center',
+  },
+  {
+    field: 'notebook',
+    headerName: 'Notebook',
+    width: 100,
+    editable: true,
+    align: 'center',
+  },
+  {
+    field: 'epi',
+    headerName: 'EPI',
+    width: 100,
+    editable: true,
+    align: 'center',
+  },
+  {
+    field: 'fotos',
+    headerName: 'Fotos',
+    width: 100,
+    editable: true,
+    align: 'center',
+  },
+  {
+    field: 'fabrica',
+    headerName: 'Fábrica',
+    width: 100,
+    editable: true,
+    align: 'center',
+  },
+  {
+    field: 'estacionamento',
+    headerName: 'Estacionamento',
+    width: 150,
+    editable: true,
+    align: 'center',
+  },
+  {
+    field: 'status',
+    headerName: 'Status',
+    width: 120,
+    align: 'center',
+  }
+];
+
+
+const rows = [
+  { id: 1, visitante: 'Kauê Farias Lourenço', empresa: 'Hitachi Astemo Ltda', motivo: 'Visita Técnica', visitado: 'Vinicius Jangeli', ultima_visita: '10/10/2025 10:15', notebook: 'Sim', epi: 'Sim', fotos: 'Sim', fabrica: 'Sim', estacionamento: 'Sim' }, 
+
+];
+
+export default function DataGridDemo() {
+  return (
+    <Box sx={{ height: 400, width: '100%' }}>
+      <Paper elevation={3} sx={{ borderRadius: '10px', overflow: 'hidden' }}>
+        <DataGrid
+          rows={rows}
+          columns={columns}
+          initialState={{
+            pagination: {
+              paginationModel: {
+                pageSize: 5,
+              },
+            },
+          }}
+          pageSizeOptions={[5]}
+          checkboxSelection
+          disableRowSelectionOnClick
+          sx={{
+            '.MuiDataGrid-columnHeaders': {
+              backgroundColor: '#FFCCCC', // Vermelho claro para o fundo
+              color: '#333', // Cor do texto para contrastar
+            },
+            '.MuiDataGrid-row': {
+              backgroundColor: 'white',
+              '&:hover': {
+                backgroundColor: '#f5f5f5',
+              },
+            },
+            '.MuiDataGrid-cell': {
+              borderBottom: '1px solid #ddd',
+            },
+            '.MuiDataGrid-footerContainer': {
+              backgroundColor: '#f7f7f7',
+            },
+            '& .MuiCheckbox-root': {
+              color: '#1976d2', // Cor da checkbox
+            },
+          }}
+        />
+      </Paper>
+    </Box>
+  );
+}
