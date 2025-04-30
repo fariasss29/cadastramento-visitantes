@@ -1,0 +1,95 @@
+import conn from '@/db/conn'
+import {Router} from 'express'
+
+export const consulta_necessidades = Router()
+
+consulta_necessidades.get('/fabrica/necessidades', async (req, res, next) => {
+  try {
+    const sql = `
+        SELECT fn.*, 
+        fnm.linha AS linha_entrega, 
+        fnm.partnumber, 
+        fnm.descricao,
+        CONCAT(fnm.partnumber, ' | ', fnm.descricao) AS material
+        FROM fabrica_necessidades fn
+        INNER JOIN fabrica_necessidades_materiais fnm ON fn.material = fnm.id;
+        `
+    const [data] = await conn.query(sql)
+    res.status(200).send(data)
+  } catch (err) {
+    next(err)
+  }
+})
+
+consulta_necessidades.get(
+  '/fabrica/necessidades/status/:status',
+  async (req, res, next) => {
+    try {
+      const sql = `
+        SELECT fn.*, fnm.linha AS linha_entrega, fnm.partnumber, fnm.volume, SUBSTR(fnm.descricao, 1, 36) AS descricao
+        FROM fabrica_necessidades fn
+        INNER JOIN fabrica_necessidades_materiais fnm ON fn.material = fnm.id
+        WHERE fn.status = ?
+        `
+      const [data] = await conn.query(sql, req.params.status.toUpperCase())
+      res.status(200).send(data)
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+consulta_necessidades.get(
+  '/fabrica/necessidades/status/:tipo/:status',
+  async (req, res, next) => {
+    try {
+      const sql = `
+        SELECT fn.*, fnm.linha AS linha_entrega, fnm.partnumber, fnm.volume, SUBSTR(fnm.descricao, 1, 36) AS descricao
+        FROM fabrica_necessidades fn
+        INNER JOIN fabrica_necessidades_materiais fnm ON fn.material = fnm.id
+        WHERE fn.status = ? and fnm.tipo = ?
+        `
+      const [data] = await conn.query(sql, [
+        req.params.status.toUpperCase(),
+        req.params.tipo
+      ])
+      res.status(200).send(data)
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+consulta_necessidades.get(
+  '/fabrica/necessidade/:uuid',
+  async (req, res, next) => {
+    try {
+      const sql = `
+        SELECT fn.* FROM fabrica_necessidades fn
+        WHERE fn.uuid = ?
+        `
+      const [data] = await conn.query(sql, req.params.uuid)
+      res.status(200).send(data)
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+consulta_necessidades.get(
+  '/fabrica/necessidades/materiais',
+  async (req, res, next) => {
+    try {
+      const sql = `
+        SELECT * FROM fabrica_necessidades_materiais fnm
+        `
+      const [data] = await conn.query(sql)
+
+      res.status(200).send(data)
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+export default consulta_necessidades
