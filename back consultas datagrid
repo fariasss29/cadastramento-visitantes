@@ -1,0 +1,15 @@
+consulta_visitantes.get(
+    '/visitantes/visitantes/consulta_todas_pessoas/',
+    async(req, res, next) => {
+        try {          
+            const sql = `
+                SELECT * FROM visitantes_dados_pessoa
+            `
+            const [data] = await conn.query(sql)
+            res.status(200).send(data)      
+        } catch (err) {   
+            next(err)
+        }
+
+    }
+)
