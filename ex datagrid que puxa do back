@@ -1,0 +1,173 @@
+/* eslint-disable react/prop-types */
+import {Box, Button, Typography} from '@mui/material'
+import {DataGridPremium} from '@mui/x-data-grid-premium'
+import BackdropLoading from '@/components/BackdropLoading'
+import GridToolbar from '@/components/Toolbar'
+import axios from '@/services/axios'
+import Error from '@/components/Error'
+import {useQuery} from 'react-query'
+import {MdDeleteOutline, MdOutlineCancel, MdOutlineFactCheck} from 'react-icons/md'
+import {useNavigate} from 'react-router-dom'
+import { useState } from 'react'
+import ModalDeletarNecessidade from './ModalDeletarNecessidade'
+
+export default function GridNecessidade({height, edition}) {
+  
+  const [open, setOpen] = useState(false)
+  const [necessidade, setNecessidade] = useState('')
+
+  const handleOpen = (value) => {
+    setOpen(true)
+    setNecessidade(value)
+  }
+
+  const handleClose = () => {
+    setOpen(!open)
+  }
+
+  function StyleStatus(status) {
+    const styles = {
+      ENTREGUE: {
+        bgcolor: '#3CCF4E',
+        px: 2,
+        borderRadius: 2,
+        fontWeight: 'bold'
+      },
+      PENDENTE: {
+        bgcolor: '#FFB200',
+        px: 2,
+        borderRadius: 2,
+        fontWeight: 'bold'
+      },
+      QUALIDADE: {
+        bgcolor: '#2195E8',
+        px: 2,
+        borderRadius: 2,
+        fontWeight: 'bold'
+      },
+      'EM FALTA': {
+        bgcolor: '#D92F2F',
+        px: 2,
+        borderRadius: 2,
+        fontWeight: 'bold'
+      },
+      ATENÇÃO: {bgcolor: '#FA8C28', px: 2, borderRadius: 2, fontWeight: 'bold'},
+      URGENTE: {bgcolor: '#D92F2F', px: 2, borderRadius: 2, fontWeight: 'bold'},
+      DEFAULT: {
+        bgcolor: '#864AF9',
+        color: 'white',
+        px: 2,
+        borderRadius: 2,
+        fontWeight: 'bold'
+      }
+    }
+
+    return styles[status] || styles['DEFAULT']
+  }
+
+  const {isLoading, error, data, refetch} = useQuery('Necessidades Geradas', () =>
+    axios.get('/fabrica/necessidades').then((res) => res.data)
+  )
+
+  if (isLoading) return <BackdropLoading />
+  if (error) return <Error error={error.response.data} />
+
+  return (
+    <Box
+      sx={{
+        bgcolor: 'background.default',
+        borderRadius: 5,
+        height: height,
+        p: 2
+      }}
+    >
+      <Typography sx={{fontWeight: 'bold', fontSize: 24}}>
+        Últimas necessidades Geradas
+      </Typography>
+
+      <Box sx={{height: '100%'}}>
+        <DataGridPremium
+          slots={{
+            toolbar: GridToolbar
+          }}
+          columnVisibilityModel={{
+            editar: edition
+          }}
+          initialState={{
+            sorting: {
+              sortModel: [{field: 'criado_em', sort: 'desc'}]
+            }
+          }}
+          columns={[
+            {
+              field: 'EXCLUIR',
+              headerName: 'EXCLUIR',
+              type: 'actions',
+              width: 160,
+              getActions: (params) => [
+                <Button
+                  key={params.row.uuid}
+                  variant='contained'
+                  startIcon={<MdDeleteOutline size={20} />}
+                  disabled={params.row.status === 'ENTREGUE'}
+                  onClick={() =>
+                    handleOpen(params.row.uuid)
+                  }
+                >
+                  EXCLUIR
+                </Button>
+              ]
+            },
+            {
+              field: 'status',
+              headerName: 'STATUS',
+              width: 200,
+              display: 'flex',
+              renderCell: (params) => (
+                <Typography variant='h6' sx={StyleStatus(params.value)}>
+                  {params.value}
+                </Typography>
+              )
+            },
+            {
+              field: 'material',
+              headerName: 'MATERIAL',
+              type: 'string',
+              width: 300
+            },
+            {
+              field: 'linha_entrega',
+              headerName: 'LINHA',
+              width: 150
+            },
+            {
+              field: 'criado_em',
+              headerName: 'CRIADO EM',
+              width: 200,
+              type: 'dateTime',
+              valueGetter: (params) => {
+                return new Date(params)
+              }
+            },
+            {
+              field: 'entregue_em',
+              headerName: 'ENTREGUE EM',
+              width: 200,
+              type: 'string' || 'dateTime',
+              valueGetter: (params) => {
+                return params === null
+                  ? 'PENDENTE'
+                  : new Date(params).toLocaleString()
+              }
+            }
+          ]}
+          rows={data}
+          getRowId={(row) => row.uuid}
+          unstable_cellSelection
+          disableRowSelectionOnClick
+        />
+      </Box>
+      {open && <ModalDeletarNecessidade open={open} handleClose={handleClose} necessidade={necessidade} refetch={refetch}/>}
+    </Box>
+  )
+}
