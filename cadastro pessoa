@@ -1,292 +1,243 @@
 import {
-    Alert,
-    Box,
-    Button,
-    Paper,
-    TextField,
-    Typography
-  } from '@mui/material'
-  import { useForm, Controller } from 'react-hook-form'
-  import InputMask from 'react-input-mask'
-  import { useState } from 'react';
-  import axios from '@/services/axios'
-  import toast from 'react-hot-toast'
-  import { useNavigate } from 'react-router-dom'
-  import MenuItem from '@mui/material/MenuItem'
-  import { Autocomplete, InputLabel } from '@mui/material'
-  import ModalCadastroPessoa from '@/components/visitantes/ModalCadastroPessoa.jsx';
-  import { getValue } from '@mdxeditor/editor';
+  Alert,
+  Box,
+  Button,
+  Paper,
+  TextField,
+  Typography
+} from '@mui/material';
+import { useForm, Controller } from 'react-hook-form';
+import InputMask from 'react-input-mask';
+import { useState } from 'react';
+import axios from '@/services/axios';
+import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
+import MenuItem from '@mui/material/MenuItem';
+import { Autocomplete } from '@mui/material';
+import ModalCadastroPessoa from '@/components/visitantes/ModalCadastroPessoa.jsx';
+import BackdropLoading from '@/components/BackdropLoading';
+import Error from '@/components/Error';
+import { useQuery } from 'react-query';
 
-  
-  // Função de validação de CPF
-  function validarCPF(cpf) {
-    cpf = cpf.replace(/[^\d]+/g, '')
-    if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false
-  
-    let soma = 0
-    for (let i = 0; i < 9; i++) soma += +cpf[i] * (10 - i)
-    let resto = (soma * 10) % 11
-    if (resto === 10 || resto === 11) resto = 0
-    if (resto !== +cpf[9]) return false
-  
-    soma = 0
-    for (let i = 0; i < 10; i++) soma += +cpf[i] * (11 - i)
-    resto = (soma * 10) % 11
-    if (resto === 10 || resto === 11) resto = 0
-    return resto === +cpf[10]
-  }
-  
-  // ... (imports continuam os mesmos)
+function validarCPF(cpf) {
+  cpf = cpf.replace(/[^\d]+/g, '');
+  if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
+
+  let soma = 0;
+  for (let i = 0; i < 9; i++) soma += +cpf[i] * (10 - i);
+  let resto = (soma * 10) % 11;
+  if (resto === 10 || resto === 11) resto = 0;
+  if (resto !== +cpf[9]) return false;
+
+  soma = 0;
+  for (let i = 0; i < 10; i++) soma += +cpf[i] * (11 - i);
+  resto = (soma * 10) % 11;
+  if (resto === 10 || resto === 11) resto = 0;
+  return resto === +cpf[10];
+}
 
 export default function CadastroPessoa() {
-    const navigate = useNavigate()
+  const navigate = useNavigate();
+  const [open, setOpenConfirmModal] = useState(false);
+  const [dados, setDados] = useState([])
 
-    const [open, setOpenConfirmModal] = useState(false)
-    const [id, setId] = useState('')
+  const { register, handleSubmit, control, formState: { errors } } = useForm();
 
+  const handleCloseCadastroPessoa = () => {
+    setOpenConfirmModal(false)
+  }
 
-    const handleOpenModalIfValid = async () => {
-      const valid = await trigger(); // dispara a validação dos campos
-      if (valid) {
-        setOpenConfirmModal(true); // só abre o modal se estiver válido
-      }
+  const confirmarCadastro = () => {
+
+    const documentoLimpo = dados.cpf.replace(/[^\d]+/g, '');
+    if (!validarCPF(documentoLimpo)) {
+      toast.error('CPF inválido.');
+      return;
     }
 
-    const openModalCadastroPessoa = () => {
-      setOpenConfirmModal(true)
-    }
-
-    const handleCloseCadastroPessoa = () => {
-      setOpenConfirmModal(false)
-    }
-    const handleModal = (NovoId) => {
-      setId(NovoId)
-      setOpenConfirmModal(true)
-    }
-
-    const handleConfirm = async () => {
-      const dados = getValues(); // pega os dados atuais do formulário
-      try {
-        toast.loading('Salvando...', { id: 'salvando' });
-        const response = await axios.post('/visitantes/visita/criar', dados);
-        toast.success(response.data.message, { id: 'salvando' });
+    toast.promise(
+      axios.post('/visitantes/cadastro_pessoa', dados), {
+      loading: 'Carregando...',
+      success: (res) => {
+        setOpenConfirmModal(false);
         navigate('/visitantes/inicial');
-      } catch (err) {
-        const mensagemErro = err.response?.data?.message || 'Erro ao salvar';
-        toast.error(mensagemErro, { id: 'salvando' });
-      } finally {
-        setOpenConfirmModal(false); // fecha o modal depois do envio
-      }
-    };
+        return res.data.message
+      },
 
-  
-    const {
-      register,
-      handleSubmit,
-      control,
-      formState: { errors },
-      getValues,
-      trigger
-    } = useForm()
-  
-    const onSubmit = async (dados) => {
-      const documentoLimpo = dados.documento.replace(/[^\d]+/g, '')
-      if (!validarCPF(documentoLimpo)) {
-        toast.error('CPF inválido.')
-        return
-      }
-  
-      try {
-        toast.loading('Salvando...', { id: 'salvando' })
-  
-        const response = await axios.post('/visitantes/pessoa/criar', dados)
-  
-        toast.success(response.data.message, { id: 'salvando' })
-        navigate('/visitantes/inicial')
-      } catch (err) {
-        const mensagemErro = err.response?.data?.message || 'Erro ao salvar'
-        toast.error(mensagemErro, { id: 'salvando' })
+      error: (err) => {
+        const mensagemErro = err.response?.data?.message || 'Erro ao salvar';
+        return mensagemErro;
       }
     }
-  
-    const ErrorAlert = ({ campo }) =>
-      campo ? (
-        <Alert variant='outlined' sx={{ mt: 1 }} severity='error'>
-          {campo.message || 'Campo obrigatório'}
-        </Alert>
-      ) : null
-  
-    // const {
-    //   isLoading,
-    //   error,
-    //   data: empresas
-    // } = useQuery('Empresas Cadastradas Quimicas', () =>
-    //   axios.get('/quimicos/empresas').then((res) => res.data)
-    // )
-  
-    // if (isLoading) return <BackdropLoading />
-    // if (error) return <Error error={error.response?.data} />
-
-
-    const empresas = [
-        {uuid: 1, razao_social: 'Hitachi Astemo Campinas', cnpj: '13.625.300/0001-08' },
-    ]
-  
-    return (
-      <Box sx={{ width: '100%', px: 3, mt: 3 }}>
-        <Typography variant='h3' mb={2}>
-          Cadastro de Pessoa
-        </Typography>
-  
-        <Paper sx={{ p: 4, borderRadius: 5 }}>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {/* Empresa */}
-              <Box>
-                <InputLabel sx={{ fontSize: 18, mb: 1 }}>Empresa</InputLabel>
-                <Controller
-                  name='empresa'
-                  control={control}
-                  rules={{ required: true }}
-                  render={({ field }) => {
-                    const { onChange, value, ...restField } = field
-                    return (
-                      <Autocomplete
-                        {...restField}
-                        value={value || null}
-                        disableClearable
-                        options={empresas}
-                        getOptionLabel={(option) => `${option.cnp}${option.razao_social}` || ''}
-                        isOptionEqualToValue={(option, value) => option.uuid === value.uuid}
-                        renderInput={(params) => (
-                          <TextField {...params} placeholder='Selecione a empresa' />
-                        )}
-                        onChange={(_, data) => {
-                          onChange(data)
-                        }}
-                      />
-                    )
-                  }}
-                />
-                <ErrorAlert campo={errors.empresa} />
-              </Box>
-  
-              {/* Nome Completo */}
-              <Box>
-                <TextField
-                  label='Nome Completo'
-                  fullWidth
-                  {...register('nome_completo', { required: true })}
-                />
-                <ErrorAlert campo={errors.nome_completo} />
-              </Box>
-  
-              {/* CPF, Nascimento, Gênero */}
-              <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                <Box sx={{ flex: 1, minWidth: 250 }}>
-                  <Controller
-                    name='documento'
-                    control={control}
-                    rules={{ required: true }}
-                    render={({ field }) => (
-                      <InputMask mask='999.999.999-99' {...field}>
-                        {(inputProps) => (
-                          <TextField
-                            {...inputProps}
-                            label='CPF'
-                            fullWidth
-                            type='text'
-                          />
-                        )}
-                      </InputMask>
-                    )}
-                  />
-                  <ErrorAlert campo={errors.documento} />
-                </Box>
-  
-                <Box sx={{ flex: 1, minWidth: 250 }}>
-                  <TextField
-                    label='Data de Nascimento'
-                    type='date'
-                    fullWidth
-                    InputLabelProps={{ shrink: true }}
-                    {...register('data_nascimento', { required: true })}
-                  />
-                  <ErrorAlert campo={errors.data_nascimento} />
-                </Box>
-  
-                <Box sx={{ flex: 1, minWidth: 250 }}>
-                  <TextField
-                    select
-                    label='Gênero'
-                    fullWidth
-                    defaultValue=''
-                    {...register('genero', { required: true })}
-                  >
-                    <MenuItem value='Masculino'>Masculino</MenuItem>
-                    <MenuItem value='Feminino'>Feminino</MenuItem>
-                    <MenuItem value='Outro'>Outro</MenuItem>
-                  </TextField>
-                  <ErrorAlert campo={errors.genero} />
-                </Box>
-              </Box>
-  
-              {/* Celular e Email */}
-              <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                <Box sx={{ flex: 1, minWidth: 300 }}>
-                  <Controller
-                    name='celular'
-                    control={control}
-                    rules={{ required: true }}
-                    render={({ field }) => (
-                      <InputMask mask='(99) 99999-9999' {...field}>
-                        {(inputProps) => (
-                          <TextField
-                            {...inputProps}
-                            label='Celular'
-                            fullWidth
-                            type='tel'
-                          />
-                        )}
-                      </InputMask>
-                    )}
-                  />
-                  <ErrorAlert campo={errors.celular} />
-                </Box>
-  
-                <Box sx={{ flex: 1, minWidth: 300 }}>
-                  <TextField
-                    label='Email'
-                    type='email'
-                    fullWidth
-                    {...register('email', {
-                      required: 'E-mail é obrigatório',
-                      pattern: {
-                        value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-                        message: 'E-mail inválido'
-                      }
-                    })}
-                  />
-                  <ErrorAlert campo={errors.email} />
-                </Box>
-              </Box>
-  
-              <Button type='button' variant='contained' onClick={handleOpenModalIfValid}  fullWidth sx={{ py: 2, fontSize: '1.1rem' }}>
-                Registrar Pessoa
-              </Button>
-            </Box>
-          </form>
-        </Paper>
-        <ModalCadastroPessoa
-        open = {open}
-        handleClose={handleCloseCadastroPessoa}
-        confirm={handleConfirm}
-        id={id}
-   
-        />
-
-      </Box>
     )
   }
-  
-  
+
+  const onSubmit = async (dados) => {
+    console.log(dados)
+    setDados(dados)
+    setOpenConfirmModal(true)
+
+  };
+
+  const ErrorAlert = ({ campo }) => campo ? (
+    <Alert variant='outlined' sx={{ mt: 1 }} severity='error'>
+      {campo.message || 'Campo obrigatório'}
+    </Alert>
+  ) : null;
+
+  const { isLoading, error, data } = useQuery(
+    ['Nomes empresas do cadastro de visitantes'],
+    () => axios.get('/visitantes/consulta_empresa').then((res) => res.data)
+  );
+
+  if (isLoading) return <BackdropLoading />;
+  if (error) return <Error error={error.response.data} />;
+
+  return (
+    <Box sx={{ width: '100%', px: 3, mt: 3 }}>
+      <Typography variant='h3' mb={2}>
+        Cadastro de Pessoa
+      </Typography>
+
+      <Paper sx={{ p: 4, borderRadius: 5 }}>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5 }}>
+            <Box>
+              <Controller
+                name='empresa'
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => {
+                  const { onChange, value, ...restField } = field
+                  return (
+                    <Autocomplete
+                    {...field}
+                    disableClearable
+                    options={data}
+                    getOptionLabel={(option) => `${option.cnpj} - ${option.razao_social}`}
+                    isOptionEqualToValue={(option, value) => option.uuid === value.uuid}
+                    renderInput={(params) => (
+                      <TextField {...params} placeholder='Selecione a empresa' />
+                    )}
+                    onChange={(_, data) => {
+                      onChange(data)
+                  }}
+                  />
+                  )
+                }}
+              />
+              <ErrorAlert campo={errors.empresa} />
+            </Box>
+
+            <Box>
+              <TextField
+                label='Nome Completo'
+                fullWidth
+                {...register('nome_completo', { required: true })}
+              />
+              <ErrorAlert campo={errors.nome_completo} />
+            </Box>
+
+            <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+              <Box sx={{ flex: 1, minWidth: 250 }}>
+                <Controller
+                  name='cpf'
+                  control={control}
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <InputMask mask='999.999.999-99' {...field}>
+                      {(inputProps) => (
+                        <TextField
+                          {...inputProps}
+                          label='CPF'
+                          fullWidth
+                          type='text'
+                        />
+                      )}
+                    </InputMask>
+                  )}
+                />
+                <ErrorAlert campo={errors.cpf} />
+              </Box>
+
+              <Box sx={{ flex: 1, minWidth: 250 }}>
+                <TextField
+                  label='Data de Nascimento'
+                  type='date'
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
+                  {...register('data_nascimento', { required: true })}
+                />
+                <ErrorAlert campo={errors.data_nascimento} />
+              </Box>
+
+              <Box sx={{ flex: 1, minWidth: 250 }}>
+                <TextField
+                  select
+                  label='Gênero'
+                  fullWidth
+                  defaultValue=''
+                  {...register('genero', { required: true })}
+                >
+                  <MenuItem value='Masculino'>Masculino</MenuItem>
+                  <MenuItem value='Feminino'>Feminino</MenuItem>
+                  <MenuItem value='Outro'>Outro</MenuItem>
+                </TextField>
+                <ErrorAlert campo={errors.genero} />
+              </Box>
+            </Box>
+
+            <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+              <Box sx={{ flex: 1, minWidth: 300 }}>
+                <Controller
+                  name='celular'
+                  control={control}
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <InputMask mask='(99) 99999-9999' {...field}>
+                      {(inputProps) => (
+                        <TextField
+                          {...inputProps}
+                          label='Celular'
+                          fullWidth
+                          type='tel'
+                        />
+                      )}
+                    </InputMask>
+                  )}
+                />
+                <ErrorAlert campo={errors.celular} />
+              </Box>
+
+              <Box sx={{ flex: 1, minWidth: 300 }}>
+                <TextField
+                  label='Email'
+                  type='email'
+                  fullWidth
+                  {...register('email', {
+                    required: 'E-mail é obrigatório',
+                    pattern: {
+                      value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+                      message: 'E-mail inválido'
+                    }
+                  })}
+                />
+                <ErrorAlert campo={errors.email} />
+              </Box>
+            </Box>
+
+            <Button type='submit' variant='contained' fullWidth sx={{ py: 2, fontSize: '1.1rem' }}>
+              Registrar Pessoa
+            </Button>
+          </Box>
+        </form>
+      </Paper>
+
+      <ModalCadastroPessoa
+        open={open}
+        handleClose={handleCloseCadastroPessoa}
+        confirm={confirmarCadastro}
+      />
+    </Box>
+  );
+}
