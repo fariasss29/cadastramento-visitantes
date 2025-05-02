@@ -16,6 +16,8 @@ import ModalCadastroEmpresa from '@/components/visitantes/ModalCadastroEmpresa'
 import { getValue } from '@mdxeditor/editor';
 
 
+
+
 // Validação CNPJ
 function validarCNPJ(cnpj) {
   cnpj = cnpj.replace(/[^\d]+/g, '') // trecho usado para limpar a str e manter somente numeros
@@ -47,76 +49,10 @@ function isValidCEP(cep) {
   return cep.length === 8   // tem q ter 8 caracteres e essa length ou len é usada para determinar o tamanho da lista nesse casso do cep
 }
 
-async function buscarEmpresaPorCNPJ(cnpj) {  //async usado para fazer funções assincronas
-  const cnpjLimpo = cnpj.replace(/[^\d]+/g, '')
-  try {
-    const response = await axios.get(`https://brasilapi.com.br/api/cnpj/v1/${cnpjLimpo}`) //await funções assincronas tbm, aixos é para ler o link https, e o get solicita dados de um servidor no caso o link
-    const {
-      razao_social,
-      nome_fantasia,
-      cnae_fiscal_descricao,
-      cep,
-      descricao_tipo_de_logradouro,
-      logradouro,
-      numero,
-      bairro,
-      municipio,
-      uf
-    } = response.data
-
-    return {
-      razaoSocial: razao_social,
-      nomeEmpresarial: nome_fantasia || razao_social,
-      ramoAtuacao: cnae_fiscal_descricao,
-      cep,
-      rua: `${descricao_tipo_de_logradouro ?? ''} ${logradouro ?? ''}`.trim(),
-      numero: numero || '',
-      bairro,
-      cidade: municipio,
-      estado: uf
-    }
-  } catch (error) {
-    throw new Error('CNPJ não encontrado ou inválido')
-  }
-}
-
 export default function CadastroEmpresa() {
   const navigate = useNavigate()
 
-  const [open, setOpenConfirmModal] = useState(false)
-  const [id, setId] = useState('')
   
-  const openModalCadastroEmpresa = () => {
-    setOpenConfirmModal(true)
-  }
-
-  const handleCloseCadastroEmpresa = () => {
-    setOpenConfirmModal(false)
-  }
-
-  const handleModal = (novoId) => {
-    setId(novoId)
-    setOpenConfirmModal(true)
-  }
- 
-
-
-  const handleConfirm = async () => {
-    const dados = getValues(); // pega os dados atuais do formulário
-    try {
-      toast.loading('Salvando...', { id: 'salvando' });
-      const response = await axios.post('/visitantes/visita/criar', dados);
-      toast.success(response.data.message, { id: 'salvando' });
-      navigate('/visitantes/inicial');
-    } catch (err) {
-      const mensagemErro = err.response?.data?.message || 'Erro ao salvar';
-      toast.error(mensagemErro, { id: 'salvando' });
-    } finally {
-      setOpenConfirmModal(false); // fecha o modal depois do envio
-    }
-  };
-
-
   const {
     register,
     handleSubmit,
@@ -124,215 +60,261 @@ export default function CadastroEmpresa() {
     watch,
     control,
     formState: { errors },
-    getValue,
-    trigger
+    getValues,
   } = useForm()
 
-  const onSubmit = (dados) => {
+  const [open, setOpenConfirmModal] = useState(false)
+
+  const handleCloseCadastroEmpresa = () => {
+    setOpenConfirmModal(false)
+  }
+
+  const [isLoading, setIsLoading] = useState(false)
+
+  async function buscarEmpresaPorCNPJ(cnpj) {
+    const cnpjLimpo = cnpj.replace(/[^\d]+/g, '');
+
+    const res = await toast.promise(axios.get(`https://brasilapi.com.br/api/cnpj/v1/${cnpjLimpo}`), {
+      loading: () => {
+        setIsLoading(true)
+        return 'Carregando...'
+      },
+      success: () => {
+        setIsLoading(false)
+        return 'Dados carregados com sucesso!'
+      },
+      error: (err) => {
+        const mensagemErro = err.response?.data?.message || 'Erro ao consultar CNPJ';
+        return mensagemErro;
+      }
+    });
+
+    // Agora res é a resposta do axios, e podemos devolver nosso objeto
+    const data = res.data;
+    return {
+      razao_social: data.razao_social,
+      nome_empresa: data.nome_fantasia || data.razao_social,
+      ramo_atuacao: data.cnae_fiscal_descricao,
+      cep: data.cep,
+      rua: `${data.descricao_tipo_de_logradouro ?? ''} ${data.logradouro ?? ''}`.trim(),
+      numero: data.numero || '',
+      bairro: data.bairro,
+      cidade: data.municipio,
+      estado: data.uf,
+    };
+  }
+
+  const confirmaCadastro = () => {
+    const dados = getValues()
     const cnpjLimpo = dados.cnpj.replace(/[^\d]+/g, '')
     if (!validarCNPJ(cnpjLimpo)) {
       toast.error('CNPJ inválido.')
       return
     }
 
-    toast.promise(axios.post('/visitantes/empresa/criar', dados), {
-      loading: 'Salvando...',
+    toast.promise(
+      axios.post('/visitantes/cadastro-empresa', dados), {
+      loading: 'Carregando...',
       success: (res) => {
-        navigate('/visitantes/inicial')
+        setOpenConfirmModal(false);
+        navigate('/visitantes/inicial');
         return res.data.message
       },
-      error: (err) => err.response?.data?.message || 'Erro ao salvar'
-    })
+
+      error: (err) => {
+        const mensagemErro = err.response?.data?.message || 'Erro ao salvar';
+        return mensagemErro;
+      }
+    }
+    )
   }
+
+  const onSubmit = () => {
+      setOpenConfirmModal(true)
+    }
 
   const handleBuscarCNPJ = async () => {
-    try {
-      const dados = await buscarEmpresaPorCNPJ(watch('cnpj'))
-      setValue('razaoSocial', dados.razaoSocial)
-      setValue('nomeEmpresa', dados.nomeEmpresarial)
-      setValue('ramoAtuacao', dados.ramoAtuacao)
-      setValue('cep', dados.cep)
-      setValue('rua', dados.rua)
-      setValue('numero', dados.numero)
-      setValue('bairro', dados.bairro)
-      setValue('cidade', dados.cidade)
-      setValue('estado', dados.estado)
-    } catch (err) {
-      toast.error(err.message)
+      try {
+        const dados = await buscarEmpresaPorCNPJ(watch('cnpj'))
+
+        setValue('razao_social', dados.razao_social)
+        setValue('nome_empresa', dados.nome_empresa)
+        setValue('ramo_atuacao', dados.ramo_atuacao)
+        setValue('cep', dados.cep)
+        setValue('rua', dados.rua)
+        setValue('numero', dados.numero)
+        setValue('bairro', dados.bairro)
+        setValue('cidade', dados.cidade)
+        setValue('estado', dados.estado)
+      } catch (err) {
+        toast.error(err.message)
+      }
     }
-  }
 
-  const handleOpenModalIfValid = async () => {
-    const valid = await trigger(); // dispara a validação dos campos
-    if (valid) {
-      setOpenConfirmModal(true); // só abre o modal se estiver válido
-    }
-  }
 
-  const ErrorAlert = ({ campo }) =>
-    campo ? (
-      <Alert variant='outlined' sx={{ mt: 1 }} severity='error'>
-        {campo.message || 'Campo obrigatório'}
-      </Alert>
-    ) : null
+    const ErrorAlert = ({ campo }) =>
+      campo ? (
+        <Alert variant='outlined' sx={{ mt: 1 }} severity='error'>
+          {campo.message || 'Campo obrigatório'}
+        </Alert>
+      ) : null
 
-  return (
-    <Box sx={{ maxWidth: 2000, mx: 'auto', mt: 3 }}>
-      <Typography variant='h3' mb={2}>
-        Cadastro de Empresa
-      </Typography>
+    return (
+      <Box sx={{ maxWidth: 2000, mx: 'auto', mt: 3 }}>
+        <Typography variant='h3' mb={2}>
+          Cadastro de Empresa
+        </Typography>
 
-      <Paper sx={{ p: 3, borderRadius: 5 }}>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <Paper sx={{ p: 3, borderRadius: 5 }}>
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
 
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Controller
-                name='cnpj'
-                control={control}
-                rules={{
-                  required: true,
-                  validate: (v) => validarCNPJ(v) || 'CNPJ inválido'
-                }}
-                render={({ field }) => (
-                  <InputMask mask='99.999.999/9999-99' {...field}>
-                    {(inputProps) => (
-                      <TextField
-                        {...inputProps}
-                        label='CNPJ'
-                        fullWidth
-                      />
-                    )}
-                  </InputMask>
-                )}
-              />
-              <Button variant='outlined' onClick={handleBuscarCNPJ} sx={{ height: '60px', px: 5, fontSize: '1rem' }}>
-                Buscar CNPJ
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Controller
+                  name='cnpj'
+                  control={control}
+                  rules={{
+                    required: true,
+                    validate: (v) => validarCNPJ(v) || 'CNPJ inválido'
+                  }}
+                  render={({ field }) => (
+                    <InputMask mask='99.999.999/9999-99' {...field}>
+                      {(inputProps) => (
+                        <TextField
+                          {...inputProps}
+                          label='CNPJ'
+                          fullWidth
+                        />
+                      )}
+                    </InputMask>
+                  )}
+                />
+                <Button disabled={isLoading} variant='outlined' onClick={handleBuscarCNPJ} sx={{ height: '60px', px: 5, fontSize: '1rem' }}>
+                  Buscar CNPJ
+                </Button>
+              </Box>
+              <ErrorAlert campo={errors.cnpj} />
+
+              <Box>
+                <TextField
+                  label='Nome da Empresa'
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
+                  {...register('nome_empresa', { required: true })}
+                />
+                <ErrorAlert campo={errors.nome_empresa} />
+              </Box>
+
+              <Box>
+                <TextField
+                  label='Razão Social'
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
+                  {...register('razao_social', { required: true })}
+                />
+                <ErrorAlert campo={errors.razao_social} />
+              </Box>
+
+              <Box>
+                <TextField
+                  label='Ramo de Atuação'
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
+                  {...register('ramo_atuacao', { required: true })}
+                />
+                <ErrorAlert campo={errors.ramo_atuacao} />
+              </Box>
+
+              <Box>
+                <Controller
+                  name='cep'
+                  control={control}
+                  rules={{
+                    required: true,
+                    validate: (v) => isValidCEP(v) || 'CEP inválido'
+                  }}
+                  render={({ field }) => (
+                    <InputMask mask='99999-999' {...field}>
+                      {(inputProps) => (
+                        <TextField
+                          {...inputProps}
+                          label='CEP'
+                          fullWidth
+                          InputLabelProps={{ shrink: true }}
+                        />
+                      )}
+                    </InputMask>
+                  )}
+                />
+                <ErrorAlert campo={errors.cep} />
+              </Box>
+
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Box sx={{ flex: 3 }}>
+                  <TextField
+                    label='Rua'
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                    {...register('rua', { required: true })}
+                  />
+                  <ErrorAlert campo={errors.rua} />
+                </Box>
+
+                <Box sx={{ flex: 2 }}>
+                  <TextField
+                    label='Número'
+                    type='number'
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                    {...register('numero', { required: true })}
+                  />
+                  <ErrorAlert campo={errors.numero} />
+                </Box>
+              </Box>
+
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Box sx={{ flex: 3 }}>
+                  <TextField
+                    label='Bairro'
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                    {...register('bairro', { required: true })}
+                  />
+                  <ErrorAlert campo={errors.bairro} />
+                </Box>
+
+                <Box sx={{ flex: 2 }}>
+                  <TextField
+                    label='Cidade'
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                    {...register('cidade', { required: true })}
+                  />
+                  <ErrorAlert campo={errors.cidade} />
+                </Box>
+
+                <Box sx={{ flex: 1 }}>
+                  <TextField
+                    label='Estado'
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                    {...register('estado', { required: true })}
+                  />
+                  <ErrorAlert campo={errors.estado} />
+                </Box>
+              </Box>
+
+              <Button type='submit' variant='contained' fullWidth sx={{ py: 2, fontSize: '1.1rem' }}>
+                Registrar Empresa
               </Button>
             </Box>
-            <ErrorAlert campo={errors.cnpj} />
-
-            <Box>
-              <TextField
-                label='Nome da Empresa'
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                {...register('nomeEmpresa', { required: true })}
-              />
-              <ErrorAlert campo={errors.nomeEmpresa} />
-            </Box>
-
-            <Box>
-              <TextField
-                label='Razão Social'
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                {...register('razaoSocial', { required: true })}
-              />
-              <ErrorAlert campo={errors.razaoSocial} />
-            </Box>
-
-            <Box>
-              <TextField
-                label='Ramo de Atuação'
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                {...register('ramoAtuacao', { required: true })}
-              />
-              <ErrorAlert campo={errors.ramoAtuacao} />
-            </Box>
-
-            <Box>
-              <Controller
-                name='cep'
-                control={control}
-                rules={{
-                  required: true,
-                  validate: (v) => isValidCEP(v) || 'CEP inválido'
-                }}
-                render={({ field }) => (
-                  <InputMask mask='99999-999' {...field}>
-                    {(inputProps) => (
-                      <TextField
-                        {...inputProps}
-                        label='CEP'
-                        fullWidth
-                        InputLabelProps={{ shrink: true }}
-                      />
-                    )}
-                  </InputMask>
-                )}
-              />
-              <ErrorAlert campo={errors.cep} />
-            </Box>
-
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Box sx={{ flex: 3 }}>
-                <TextField
-                  label='Rua'
-                  fullWidth
-                  InputLabelProps={{ shrink: true }}
-                  {...register('rua', { required: true })}
-                />
-                <ErrorAlert campo={errors.rua} />
-              </Box>
-
-              <Box sx={{ flex: 2 }}>
-                <TextField
-                  label='Número'
-                  type='number'
-                  fullWidth
-                  InputLabelProps={{ shrink: true }}
-                  {...register('numero', { required: true })}
-                />
-                <ErrorAlert campo={errors.numero} />
-              </Box>
-            </Box>
-
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Box sx={{ flex: 3 }}>
-                <TextField
-                  label='Bairro'
-                  fullWidth
-                  InputLabelProps={{ shrink: true }}
-                  {...register('bairro', { required: true })}
-                />
-                <ErrorAlert campo={errors.bairro} />
-              </Box>
-
-              <Box sx={{ flex: 2 }}>
-                <TextField
-                  label='Cidade'
-                  fullWidth
-                  InputLabelProps={{ shrink: true }}
-                  {...register('cidade', { required: true })}
-                />
-                <ErrorAlert campo={errors.cidade} />
-              </Box>
-
-              <Box sx={{ flex: 1 }}>
-                <TextField
-                  label='Estado'
-                  fullWidth
-                  InputLabelProps={{ shrink: true }}
-                  {...register('estado', { required: true })}
-                />
-                <ErrorAlert campo={errors.estado} />
-              </Box>
-            </Box>
-
-            <Button type='button' variant='contained' onClick={handleOpenModalIfValid} fullWidth sx={{ py: 2, fontSize: '1.1rem' }}>
-              Registrar Empresa
-            </Button>
-          </Box>
-        </form>
-      </Paper>
-      <ModalCadastroEmpresa
-        open={open}
-        handleClose={handleCloseCadastroEmpresa}
-        confirm={handleConfirm}
-        id={id}
-      />
-    </Box>
-  )
-}
+          </form>
+        </Paper>
+        <ModalCadastroEmpresa
+          open={open}
+          handleClose={handleCloseCadastroEmpresa}
+          confirm={confirmaCadastro}
+        />
+      </Box>
+    )
+  }
