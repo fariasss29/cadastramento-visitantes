@@ -1,0 +1,288 @@
+import {
+  Alert,
+  Autocomplete,
+  Box,
+  Button,
+  FormControl,
+  FormControlLabel,
+  FormLabel,
+  MenuItem,
+  Paper,
+  Radio,
+  RadioGroup,
+  TextField,
+  Typography
+} from '@mui/material';
+import { useForm, Controller } from 'react-hook-form';
+import axios from '@/services/axios';
+import { useState } from 'react';
+import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
+import ModalCadastroVisita from '@/components/visitantes/ModalCadastroVisita';
+import { useQuery } from 'react-query';
+import BackdropLoading from '@/components/BackdropLoading';
+
+const motivos = ['Reunião', 'Visita Técnica'];
+const opcoes = ['Notebook', 'EPI', 'Fotos', 'Fabrica', 'Estacionamento'];
+const solicitante = ['sla', 'sla', 'sla'];
+
+export default function CadastroVisita() {
+  const navigate = useNavigate();
+  const [open, setOpenConfirmModal] = useState(false);
+  const [dados, setDados] = useState([]);
+
+  const { register, handleSubmit, control, watch, formState: { errors } } = useForm();
+
+  const handleCloseCadastroVisita = () => {
+    setOpenConfirmModal(false);
+  };
+
+  const confirmarVisita = () => {
+    toast.promise(
+      axios.post('/visitantes/cadastro_visita', dados),
+      {
+        loading: 'Carregando...',
+        success: (res) => {
+          setOpenConfirmModal(false);
+          navigate('/visitantes/inicial');
+          return res.data.message;
+        },
+        error: (err) => {
+          const mensagemErro = err.response?.data?.message || 'Erro ao salvar';
+          return mensagemErro;
+        }
+      }
+    );
+  };
+
+  const EPI = watch('EPI');
+  const sapato_disponibilidade = watch('sapato_disponibilidade');
+
+  const onSubmit = async (dados) => {
+    console.log('Dados enviados:', dados);
+    setDados(dados);
+    setOpenConfirmModal(true);  // Abre o modal de confirmação
+  };
+
+  const ErrorAlert = ({ campo }) => campo ? (
+    <Alert variant='outlined' sx={{ mt: 1 }} severity='error'>
+      {campo.message || 'Campo obrigatório'}
+    </Alert>
+  ) : null;
+
+  const { isLoading: isLoadingVisitantes, error: errorVisitantes, data: dataVisitantes } = useQuery(
+    ['Nomes visitantes do cadastro de visita'],
+    () => axios.get('/visitantes/visitantes/consulta_visita').then((res) => res.data)
+  );
+
+  const { isLoading: isLoadingFuncionarios, error: errorFuncionarios, data: dataFuncionarios } = useQuery(
+    ['Nomes funcionários da astemo'],
+    () => axios.get('/visitantes/consultas_todos_funcionarios').then((res) => res.data)
+  );
+
+  if (isLoadingFuncionarios || isLoadingVisitantes) return <BackdropLoading />;
+  if (errorFuncionarios || errorVisitantes) return <Error error={errorFuncionarios?.response?.data || errorVisitantes?.response?.data} />;
+
+  return (
+    <Box sx={{ width: '100%', px: 3, mt: 3 }}>
+      <Typography variant='h3' mb={2}>
+        Cadastro de Visita
+      </Typography>
+
+      <Paper sx={{ p: 4, borderRadius: 5 }}>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {/* Nome do Visitante */}
+            <Box>
+              <Controller
+                name="visitante_id"
+                control={control}
+                rules={{ required: true }}
+                defaultValue={null}
+                render={({ field }) => (
+                  <Autocomplete
+                    {...field}
+                    disableClearable
+                    options={dataVisitantes || []}
+                    getOptionLabel={opt => `${opt.razao_social || 'N/A'} – ${opt.nome_completo || 'N/A'}`}
+                    isOptionEqualToValue={(opt, val) => opt.uuid === val?.uuid}
+                    renderInput={params => (
+                      <TextField
+                        {...params}
+                        placeholder="Selecione o visitante"
+                        error={!!errors.visitante_id}
+                        helperText={errors.visitante_id?.message}
+                      />
+                    )}
+                    onChange={(_, data) => field.onChange(data)}
+                  />
+                )}
+              />
+              <ErrorAlert campo={errors.visitante_id} />
+            </Box>
+
+            {/* Solicitante */}
+            <Box>
+              <Controller
+                name="solicitante"
+                control={control}
+                rules={{ required: 'Solicitante é obrigatório' }}
+                defaultValue={null}
+                render={({ field }) => (
+                  <Autocomplete
+                    {...field}
+                    disableClearable
+                    options={dataFuncionarios || []}
+                    getOptionLabel={(opt) => `${opt.nome || 'N/A'}`}
+                    isOptionEqualToValue={(opt, val) => opt.uuid === val?.uuid}
+                    filterOptions={(options, state) => {
+                      const inputValue = state.inputValue.trim().toLowerCase();
+                      // Só filtra se o valor for maior que 2 caracteres
+                      if (inputValue.length > 2) {
+                        return options.filter(option =>
+                          option.nome.toLowerCase().includes(inputValue)
+                        );
+                      }
+                      // Se a entrada for muito curta, retorna todas as opções (ou nenhuma)
+                      return [];
+                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        placeholder="Selecione o solicitante"
+                        error={!!errors.solicitante}
+                        helperText={errors.solicitante ? errors.solicitante.message : ''}
+                      />
+                    )}
+                    onChange={(_, data) => field.onChange(data)}
+                  />
+                )}
+              />
+              <ErrorAlert campo={errors.solicitante} />
+            </Box>
+
+
+            {/* Motivo da Visita */}
+            <Box>
+              <TextField
+                select
+                label='Motivo da Visita'
+                fullWidth
+                defaultValue=''
+                {...register('motivo', { required: true })}
+              >
+                {motivos.map((motivo, index) => (
+                  <MenuItem key={index} value={motivo}>
+                    {motivo}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <ErrorAlert campo={errors.motivo} />
+            </Box>
+
+            {/* Data e Hora da Visita */}
+            <Box sx={{ flex: 1, minWidth: 250 }}>
+              <TextField
+                label="Data e Hora da Visita"
+                type="datetime-local"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                InputProps={{ step: 60 }}  // passo de 1 em 1 minuto
+                {...register('data_visita', { required: true })}
+              />
+              <ErrorAlert campo={errors.data_visita} />
+            </Box>
+
+            {/* Opções */}
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+              {opcoes.map((item) => (
+                <FormControl
+                  key={item}
+                  component="fieldset"
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    border: '1px solid #CCC',
+                    borderRadius: 2,
+                    p: 1
+                  }}
+                >
+                  <FormLabel component="legend" sx={{ fontWeight: 'bold', px: 1 }}>
+                    {item}
+                  </FormLabel>
+                  <Controller
+                    name={item}
+                    control={control}
+                    defaultValue={0}
+                    render={({ field: { onChange, value } }) => (
+                      <RadioGroup row value={value} onChange={(_, v) => onChange(Number(v))}>
+                        <FormControlLabel
+                          value={1}
+                          control={<Radio />}
+                          label="Sim"
+                          sx={{
+                            m: 1,
+                            px: 2,
+                            py: 1,
+                            border: '1px solid #ccc',
+                            borderRadius: '10px',
+                            width: '80px',
+                            height: '50px',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            textAlign: 'center',
+                            '& .MuiRadio-root': { p: 0, mr: 1, color: '#2e7d32' },
+                            '& .MuiFormControlLabel-label': { fontSize: '1.2rem', fontWeight: '500' },
+                          }}
+                        />
+                        <FormControlLabel
+                          value={0}
+                          control={<Radio />}
+                          label="Não"
+                          sx={{
+                            m: 1,
+                            px: 2,
+                            py: 1,
+                            border: '1px solid #ccc',
+                            borderRadius: '10px',
+                            width: '80px',
+                            height: '50px',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            textAlign: 'center',
+                            '& .MuiRadio-root': { p: 0, mr: 1, color: '#d32f2f' },
+                            '& .MuiFormControlLabel-label': { fontSize: '1.2rem', fontWeight: '500' },
+                          }}
+                        />
+                      </RadioGroup>
+                    )}
+                  />
+                </FormControl>
+              ))}
+            </Box>
+
+            {/* Observações */}
+            <Box>
+              <TextField
+                label='Observações'
+                fullWidth
+                {...register('observacoes')}
+              />
+              <ErrorAlert campo={errors.observacoes} />
+            </Box>
+
+            <Button type='submit' variant='contained' fullWidth sx={{ mt: 2, py: 2, fontSize: '1.1rem' }}>
+              Registrar Visita
+            </Button>
+          </Box>
+        </form>
+      </Paper>
+
+      <ModalCadastroVisita
+        open={open}
+        handleClose={handleCloseCadastroVisita}
+        confirm={confirmarVisita}
+      />
+    </Box>
+  );
+}
