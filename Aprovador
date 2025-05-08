@@ -1,264 +1,64 @@
-import { useForm, Controller } from 'react-hook-form';
-import { useState } from 'react';
-import {
-  Typography,
-  TextField,
-  Autocomplete,
-  Box,
-  IconButton,
-  InputLabel,
-} from '@mui/material';
-import { MdDelete, MdAddTask, MdCheck } from 'react-icons/md';
-import ModalConfirmaFornecedor from '@/components/visitantes/ModalConfirmaFornecedor';
-import ModalDeletaFornecedor from '@/components/visitantes/ModalDeletaFornecedor';
-import axios from 'axios';
-import { toast } from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Box, Paper, IconButton, Typography } from '@mui/material';
+import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+import { useQuery } from 'react-query';
+import { FaRegCircleCheck, FaRegCircleXmark } from 'react-icons/fa6';
+import toast from 'react-hot-toast';
+import axios from '@/services/axios';
+import BackdropLoading from '@/components/BackdropLoading';
+import Error from '@/components/Error';
 
-export default function Aprovador() {
-  const [openConfirmModal, setOpenConfirmModal] = useState(false);
-  const [openDeleteModal, setOpenDeleteModal] = useState(false);
-  const [id, setId] = useState(null);
+export default function Aprovadores() {
 
-  const {
-    control,
-    register,
-    formState: { errors },
-    trigger,
-    getValues,
-  } = useForm();
+  const { isLoading, error, data } = useQuery('consulta para aprovadores', () =>
+    axios
+      .get('/visitantes/aprovacao')
+      .then((res) => res.data)
+      .then((res) => res.map((item) => ({ ...item })))
+  );
 
-  const navigate = useNavigate();
+  if (isLoading) return <BackdropLoading />;
+  if (error) return <Error error={error.response.data} />;
 
-  const Aprovadores = [
-    { id: 1, Aprovador: 'rogerrh@hitachiastemo.com' },
-    { id: 2, Aprovador: 'maria@hitachiastemo.com' },
-    { id: 3, Aprovador: 'joao@hitachiastemo.com' },
+  const columns = [
+    { field: 'status', headerName: 'Status', width: 170, align: 'center', headerAlign: 'center' },
+    { field: 'nome_completo', headerName: 'Nome Visitante', width: 200, align: 'center', headerAlign: 'center' },
+    { field: 'solicitante', headerName: 'Solicitante', width: 225, align: 'center', headerAlign: 'center' },
+    { field: 'motivo', headerName: 'Motivo', width: 140, align: 'center', headerAlign: 'center' },
+    { field: 'observacoes', headerName: 'Observação', width: 140, align: 'center', headerAlign: 'center' },
+    {
+      field: 'aprovar',
+      headerName: 'Aprovar/Rejeitar',
+      width: 180,
+      sortable: false,
+      filterable: false,
+      align: 'center',
+      headerAlign: 'center',
+      renderCell: ({ row }) => (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 0.5 }}>
+          <IconButton color="primary" size="small" onClick={() => handleStatusChange(row, 'Autorizada')}>
+            <FaRegCircleCheck size={24} />
+          </IconButton>
+          <IconButton color="error" size="small" onClick={() => handleStatusChange(row, 'Não autorizada')}>
+            <FaRegCircleXmark size={26} />
+          </IconButton>
+        </Box>
+      ),
+    },
   ];
 
-  const [mostrarCamposFabrica, setMostrarCamposFabrica] = useState(false);
-  const [mostrarCamposMultimidia, setMostrarCamposMultimidia] = useState(false);
-
-  const handleOpenModalIfValid = async (tipo) => {
-    const valid = await trigger(tipo);
-    if (valid) {
-      setOpenConfirmModal(true);
-    }
-  };
-
-  const handleConfirm = async () => {
-    const dados = getValues();
-    try {
-      toast.loading('Salvando...', { id: 'salvando' });
-      const response = await axios.post('/visitantes/visita/criar', dados);
-      toast.success(response.data.message, { id: 'salvando' });
-      navigate('/visitantes/inicial');
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Erro ao salvar', { id: 'salvando' });
-    } finally {
-      setOpenConfirmModal(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    const aprovadorDelete =
-      getValues('aprovadorFabricaDelete') || getValues('aprovadorMultimidiaDelete');
-    try {
-      toast.loading('Deletando...', { id: 'deletando' });
-      const response = await axios.post('/visitantes/visita/deletar', { id: aprovadorDelete.id });
-      toast.success(response.data.message, { id: 'deletando' });
-      setOpenDeleteModal(false);
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Erro ao deletar', { id: 'deletando' });
-    }
-  };
-
-  const handleOpenModalDeletaFabrica = async () => {
-    const valid = await trigger('aprovadorFabricaDelete');
-    if (!valid) return;
-
-    const aprovadorDelete = getValues('aprovadorFabricaDelete');
-    setId(aprovadorDelete?.id);
-    setOpenDeleteModal(true);
-  };
-
-  const handleOpenModalDeletaMultimidia = async () => {
-    const valid = await trigger('aprovadorMultimidiaDelete');
-    if (!valid) return;
-
-    const aprovadorDelete = getValues('aprovadorMultimidiaDelete');
-    setId(aprovadorDelete?.id);
-    setOpenDeleteModal(true);
-  };
-
   return (
-    <Box>
-      <Typography variant="h3">Aprovador</Typography>
-      <Box sx={{ p: 2, bgcolor: 'white', borderRadius: 2, mt: 3 }}>
+    <Box sx={{ width: '100%' }}>
+      <Typography variant='h4' sx={{ mb: 2 }}>
+        Aprovações
+      </Typography>
 
-        {/* FÁBRICA */}
-        <InputLabel sx={{ fontSize: 20 }}>Aprovador Fábrica:</InputLabel>
-        <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-          <Controller
-            name="aprovadorFabrica"
-            control={control}
-            render={({ field }) => (
-              <Autocomplete
-                {...field}
-                options={Aprovadores}
-                getOptionLabel={(opt) => opt.Aprovador}
-                isOptionEqualToValue={(opt, val) => opt.id === val?.id}
-                onChange={(_, val) => field.onChange(val)}
-                value={field.value || null}
-                sx={{ flexGrow: 1 }}
-                renderInput={(params) => <TextField {...params} label="Selecione o Aprovador" />}
-              />
-            )}
-          />
-          <IconButton color="primary" onClick={() => setMostrarCamposFabrica((s) => !s)}>
-            <MdAddTask size={24} />
-          </IconButton>
-        </Box>
-
-        {mostrarCamposFabrica && (
-          <>
-           <Box sx={{ display: 'flex', alignItems: 'center', gap: -1, mt: 2, maxWidth: 1120, width: '100%', mx: 'auto', marginLeft: '-10px' }}>
-              <IconButton color="error" onClick={() => handleOpenModalIfValid('emailFabrica')}>
-                <MdCheck size={24} />
-              </IconButton>
-              <TextField
-                label="Digite o e-mail do aprovador"
-                fullWidth
-                {...register('emailFabrica', {
-                  required: 'E-mail é obrigatório',
-                  pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'E-mail inválido' },
-                })}
-              />
-            </Box>
-            {errors.emailFabrica && (
-              <Typography color="error" sx={{ mt: 1 }}>
-                {errors.emailFabrica.message}
-              </Typography>
-            )}
-
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: -1, mt: 2, maxWidth: 1120, width: '100%', mx: 'auto', marginLeft: '-10px' }}>
-              <IconButton color="error" onClick={handleOpenModalDeletaFabrica}>
-                <MdDelete size={24} />
-              </IconButton>
-              <Controller
-                name="aprovadorFabricaDelete"
-                control={control}
-                rules={{ required: 'Selecione um aprovador para deletar!' }}
-                render={({ field }) => (
-                  <Autocomplete
-                    {...field}
-                    options={Aprovadores}
-                    getOptionLabel={(opt) => opt.Aprovador}
-                    isOptionEqualToValue={(opt, val) => opt.id === val?.id}
-                    onChange={(_, val) => field.onChange(val)}
-                    value={field.value || null}
-                    sx={{ flexGrow: 1 }}
-                    renderInput={(params) => <TextField {...params} label="Selecione o aprovador para deletar" />}
-                  />
-                )}
-              />
-            </Box>
-            {errors.aprovadorFabricaDelete && (
-              <Typography color="error" sx={{ mt: 1 }}>
-                {errors.aprovadorFabricaDelete.message}
-              </Typography>
-            )}
-          </>
-        )}
-
-        {/* MULTIMÍDIA */}
-        <InputLabel sx={{ fontSize: 20, mt: 4 }}>Aprovador Multimídia:</InputLabel>
-        <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-          <Controller
-            name="aprovadorMultimidia"
-            control={control}
-            render={({ field }) => (
-              <Autocomplete
-                {...field}
-                options={Aprovadores}
-                getOptionLabel={(opt) => opt.Aprovador}
-                isOptionEqualToValue={(opt, val) => opt.id === val?.id}
-                onChange={(_, val) => field.onChange(val)}
-                value={field.value || null}
-                sx={{ flexGrow: 1 }}
-                renderInput={(params) => <TextField {...params} label="Selecione o Aprovador" />}
-              />
-            )}
-          />
-          <IconButton color="primary" onClick={() => setMostrarCamposMultimidia((s) => !s)}>
-            <MdAddTask size={24} />
-          </IconButton>
-        </Box>
-
-        {mostrarCamposMultimidia && (
-          <>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: -1, mt: 2, maxWidth: 1120, width: '100%', mx: 'auto', marginLeft: '-10px' }}>
-              <IconButton color="error" onClick={() => handleOpenModalIfValid('emailMultimidia')}>
-                <MdCheck size={24} />
-              </IconButton>
-              <TextField
-                label="Digite o e-mail do aprovador"
-                fullWidth
-                {...register('emailMultimidia', {
-                  required: 'E-mail é obrigatório',
-                  pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'E-mail inválido' },
-                })}
-              />
-            </Box>
-            {errors.emailMultimidia && (
-              <Typography color="error" sx={{ mt: 1 }}>
-                {errors.emailMultimidia.message}
-              </Typography>
-            )}
-
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: -1, mt: 2, maxWidth: 1120, width: '100%', mx: 'auto', marginLeft: '-10px' }}>
-              <IconButton color="error" onClick={handleOpenModalDeletaMultimidia}>
-                <MdDelete size={24} />
-              </IconButton>
-              <Controller
-                name="aprovadorMultimidiaDelete"
-                control={control}
-                rules={{ required: 'Selecione um aprovador para deletar!' }}
-                render={({ field }) => (
-                  <Autocomplete
-                    {...field}
-                    options={Aprovadores}
-                    getOptionLabel={(opt) => opt.Aprovador}
-                    isOptionEqualToValue={(opt, val) => opt.id === val?.id}
-                    onChange={(_, val) => field.onChange(val)}
-                    value={field.value || null}
-                    sx={{ flexGrow: 1 }}
-                    renderInput={(params) => <TextField {...params} label="Selecione o aprovador para deletar" />}
-                  />
-                )}
-              />
-            </Box>
-            {errors.aprovadorMultimidiaDelete && (
-              <Typography color="error" sx={{ mt: 1 }}>
-                {errors.aprovadorMultimidiaDelete.message}
-              </Typography>
-            )}
-          </>
-        )}
-
-      </Box>
-
-      <ModalConfirmaFornecedor
-        open={openConfirmModal}
-        handleClose={() => setOpenConfirmModal(false)}
-        confirm={handleConfirm}
-        id={id}
-      />
-      <ModalDeletaFornecedor
-        open={openDeleteModal}
-        handleClose={() => setOpenDeleteModal(false)}
-        confirm={handleDelete}
-        id={id}
+      <DataGrid
+        sx={{bgcolor: 'background.default', borderRadius: 2, boxShadow: 2, height: '85vh'}}
+        rows={data}
+        columns={columns}
+        getRowId={(row) => row.uuid}
+        slots={{ toolbar: GridToolbar }}
       />
     </Box>
   );
