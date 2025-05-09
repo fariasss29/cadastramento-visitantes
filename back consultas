@@ -1,0 +1,270 @@
+import { Router } from "express";
+import conn from '@/db/conn';
+import { check_user } from '@/services/check_user';
+import { v4 as uuidv4 } from 'uuid';
+
+export const consulta_visitantes = Router();
+
+consulta_visitantes.get(
+    '/visitantes/consulta_empresa',
+    async (req, res, next) => {
+        try {
+            const sql =
+                `SELECT * FROM visitantes_dados_empresa`
+
+            const [data] = await conn.query(sql)
+            res.status(200).send(data)
+        } catch (err) {
+            console.log(err);
+            next(err)
+        }
+    }
+)
+
+consulta_visitantes.get(
+    '/visitantes/visitantes/consulta_nome',
+    async (req, res, next) => {
+        try {
+            const sql =
+                SELECT * FROM`visitantes_dados_pessoa`
+
+            const [data] = await conn.query(sql)
+            res.status(200).send(data)
+        } catch (err) {
+            next(err)
+        }
+
+    }
+)
+
+consulta_visitantes.get(
+    '/visitantes/visitantes/consulta_visita',
+    async (req, res, next) => {
+        try {
+            const sql =
+                `
+                SELECT
+                    p.uuid,
+                    p.nome_completo,
+                    p.uuid_empresa,
+                    e.razao_social
+                    FROM visitantes_dados_pessoa AS p
+                    JOIN visitantes_dados_empresa AS e
+                    ON p.uuid_empresa = e.uuid
+                    `
+
+            const [data] = await conn.query(sql)
+            res.status(200).send(data)
+        } catch (err) {
+            next(err)
+        }
+
+    }
+)
+
+// consulta_visitantes.get(
+//     '/visitantes/visitantes/edicao_pessoa/',  
+//     async(req, res, next) => {
+//       try{
+//         const sql =    
+//           SELECT
+//               p.nome_completo,
+//               p.cpf,
+//               p.data_nascimento,
+//               p.genero,
+//               p.celular,
+//               p.email
+//               FROM visitantes_dados_pessoa p
+//               JOIN visitantes_dados_empresa e
+//               ON p.uuid_empresa = e.uuid
+//         
+//         const[data] = await conn.query(sql)
+//         res.status(200).send(data)
+//       }catch(err){
+//         next(err)
+//       }
+//     }
+//   )
+
+consulta_visitantes.get(
+    '/visitantes/visitantes/consulta_todas_pessoas/',
+    async (req, res, next) => {
+        try {
+            const sql =
+                `
+               SELECT
+                p.uuid,
+                p.uuid_empresa,
+                p.nome_completo,
+                p.cpf,
+                p.data_nascimento,
+                p.genero,
+                p.celular,
+                p.email,
+                e.razao_social
+                FROM visitantes_dados_pessoa AS p
+                LEFT JOIN visitantes_dados_empresa AS e
+                ON p.uuid_empresa = e.uuid
+                `
+
+
+            const [data] = await conn.query(sql)
+            console.log('>>> consulta_todas_pessoas payload:', data)
+            res.status(200).send(data)
+        } catch (err) {
+            next(err)
+        }
+
+    }
+)
+
+consulta_visitantes.get(
+    '/visitantes/consultas_todas_visitas',
+    async (req, res, next) => {
+        try {
+            const sql =
+                `
+          SELECT
+            p.uuid,
+            p.nome_completo,
+            p.empresa,
+            p.documento,
+            p.data_visita,
+            p.solicitante,
+            p.motivo,
+            p.notebook,
+            p.epi,
+            p.foto,
+            p.estacionamento,
+            p.fabrica,
+            p.observacoes,
+            p.fone_disponibilidade,
+            p.oculos_disponibilidade,
+            p.sapato_disponibilidade,
+            p.sapato_tamanho
+          FROM visitantes_registro p
+            `
+                ;
+            const [data] = await conn.query(sql);
+
+            res.status(200).send(data);
+        } catch (err) {
+            next(err);
+            console.log(err)
+        }
+    }
+);
+
+
+
+consulta_visitantes.get(
+    '/visitantes/consultas_todos_funcionarios',
+    async (req, res, next) => {
+        try {
+            const sql = `SELECT nome FROM funcionarios WHERE tipo != 'D'`;
+            const [data] = await conn.query(sql);
+
+            res.status(200).send(data);
+        } catch (err) {
+            next(err);
+            // console.log(err)
+        }
+    }
+);
+
+consulta_visitantes.get('/visitantes/aprovacao', async (req, res, next) => {
+
+    try {
+
+        const session = await check_user(req);
+
+        if (!session || !session.session.acessos.includes(677)) {
+            return res.status(401).send({
+                message: 'Sem permissão!'
+            });
+        }
+
+        const { MATRICULA } = session.user
+
+        const sqlConsultaSetor = `
+    SELECT * FROM visitantes_aprovadores va
+    WHERE va.matricula = ?
+    `
+
+        const [[setor]] = await conn.query(sqlConsultaSetor, [MATRICULA])
+
+        let sql = ``
+
+        if (setor.setor === 'Fábrica') {
+            sql = `
+        SELECT * FROM visitantes_registro
+        WHERE fabrica = 1
+        `
+
+        } else {
+            sql = `
+        SELECT * FROM visitantes_registro
+        WHERE foto = 1
+        `
+        }
+
+        const [rows] = await conn.query(sql);
+        res.status(200).send(rows);
+
+    } catch (err) {
+        next(err);
+    }
+
+});
+
+consulta_visitantes.get('/visitantes/consulta_hse', async (req, res, next) => {
+
+    try {
+
+        const session = await check_user(req);
+        console.log('Sessão:', session);
+
+        if (!session || !session.session.acessos.includes(677)) {
+            return res.status(401).send({
+                message: 'Sem permissão!'
+            });
+        }
+
+        const { MATRICULA } = session.user
+
+        const sqlConsultaSetor = `
+        SELECT * FROM visitantes_aprovadores va
+        WHERE va.matricula = ?
+        `;
+        const [[setor]] = await conn.query(sqlConsultaSetor, [MATRICULA]);
+
+        let sql = ``;
+
+        if (setor.setor === 'HSE') {
+            sql = `
+                SELECT p.uuid,
+                    p.nome_completo,
+                    p.data_visita,
+                    p.solicitante, 
+                    p.epi,
+                    p.observacoes,
+                    p.fone_disponibilidade,
+                    p.oculos_disponibilidade,
+                    p.sapato_disponibilidade,
+                    p.sapato_tamanho
+                FROM visitantes_registro p
+                WHERE p.epi = 1
+            `;
+        }
+
+        const [rows] = await conn.query(sql);
+        res.status(200).send(rows);
+
+    } catch (err) {
+        next(err);
+    }
+
+});
+
+
+export default consulta_visitantes
