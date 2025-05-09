@@ -1,0 +1,92 @@
+import React, { useState } from 'react';
+import { Box, Paper, IconButton, Typography } from '@mui/material';
+import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+import { useMutation, useQuery, useQueryClient } from 'react-query';
+import { FaRegCircleCheck, FaRegCircleXmark } from 'react-icons/fa6';
+import toast from 'react-hot-toast';
+import axios from '@/services/axios';
+import BackdropLoading from '@/components/BackdropLoading';
+import Error from '@/components/Error';
+
+export default function Aprovadores() {
+  const queryClient = useQueryClient();  
+
+  const { isLoading, error, data } = useQuery('consulta para aprovadores', () =>
+    axios
+      .get('/visitantes/aprovacao')
+      .then((res) => res.data)
+      .then((res) => res.map((item) => ({ ...item })))
+  );
+
+  const updateapv = useMutation(
+    (apv) =>
+      axios.put(`/visitantes/aprovacao/${apv.uuid}`, apv),
+    {
+      onSuccess: () => {
+        toast.success('Atualizado com sucesso');
+        queryClient.invalidateQueries('consulta para aprovadores');  
+      },
+      onError: (error) => {
+        toast.error(`Erro: ${error.message}`);
+      }
+    }
+  );
+
+  if (isLoading) return <BackdropLoading />;
+  if (error) return <Error error={error.response.data} />;
+
+  //para os pendentes ficarem no topo da tabela porraaa
+  const pendentes = data.filter((r) => r.status === 'Pendente');
+  const outros = data.filter((r) => r.status !== 'Pendente');
+  const rowsOrdenadas = [...pendentes, ...outros];
+  
+
+  const columns = [
+    { field: 'status', headerName: 'Status', width: 170, align: 'center', headerAlign: 'center' },
+    { field: 'nome_completo', headerName: 'Nome Visitante', width: 200, align: 'center', headerAlign: 'center' },
+    { field: 'solicitante', headerName: 'Solicitante', width: 225, align: 'center', headerAlign: 'center' },
+    { field: 'motivo', headerName: 'Motivo', width: 140, align: 'center', headerAlign: 'center' },
+    { field: 'observacoes', headerName: 'Observação', width: 140, align: 'center', headerAlign: 'center' },
+    {
+      field: 'aprovar',
+      headerName: 'Aprovar/Rejeitar',
+      width: 180,
+      sortable: false,
+      filterable: false,
+      align: 'center',
+      headerAlign: 'center',
+      renderCell: ({ row }) => (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 0.5 }}>
+          <IconButton color="primary" size="small" onClick={() => handleStatusChange(row, 'Autorizada')}>
+            <FaRegCircleCheck size={24} />
+          </IconButton>
+          <IconButton color="error" size="small" onClick={() => handleStatusChange(row, 'Não autorizada')}>
+            <FaRegCircleXmark size={26} />
+          </IconButton>
+        </Box>
+      ),
+    },
+  ];
+  
+  const handleStatusChange = (row, status) => {
+    const updatedRow = { ...row, status }; 
+    updateapv.mutate(updatedRow);  
+  };
+
+  return (
+    <Box sx={{ width: '100%' }}>
+      <Typography variant='h4' sx={{ mb: 2 }}>
+        Aprovações
+      </Typography>
+
+      <DataGrid
+        sx={{ bgcolor: 'background.default', borderRadius: 2, boxShadow: 2, height: '85vh' }}
+        rows={rowsOrdenadas}             
+        columns={columns}
+        getRowId={(row) => row.uuid}
+        slots={{ toolbar: GridToolbar }}
+      />
+    </Box>
+  );
+}
+
